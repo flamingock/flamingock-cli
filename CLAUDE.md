@@ -317,8 +317,7 @@ The CLI itself does NOT contain any change execution logic - it's purely an orch
 
 ## Future Work
 
-- **GraalVM Native Image**: Build standalone executables (no JVM required)
-- **Distribution**: Homebrew, apt, yum, scoop packages
+- **Distribution**: Homebrew, apt, yum, scoop packages (release artifacts are the foundation)
 - **Additional frameworks**: Support for non-Spring Boot applications
 
 ## Development Guidelines
@@ -422,6 +421,53 @@ integration-tests/
 - `MYSQL_PORT=3308` — use a custom port to avoid conflicts
 
 The script runs 8 tests (4 per JAR type: Spring Boot and standalone), verifying `execute apply`, `audit list`, `issue list`, and idempotent re-runs. Docker cleanup is handled automatically via trap, even on Ctrl+C.
+
+## CI/CD
+
+### PR Quality Gate (`quality_gate.yml`)
+
+Triggers on PRs to `develop` and `workflow_dispatch`. Runs three jobs:
+1. **Build & Unit Tests** — `./gradlew build`, uploads uber JAR artifact
+2. **Native Image** — `./gradlew nativeCompile` on `ubuntu-latest`, uploads native binary
+3. **Integration Tests** — downloads both artifacts, runs `run-tests.sh` against MySQL (Docker) for both uber JAR and native binary
+
+### Release Workflow (`release.yml`)
+
+Triggers on `v*` tag push or `workflow_dispatch` (with optional `tag` and `dry_run` inputs). Four jobs:
+
+1. **Validate** — extracts version from tag (or `gradle.properties`), validates semver format, checks tag matches `gradle.properties`
+2. **Build Native** (matrix: 4 targets) — builds native binaries for linux-x86_64, macos-arm64, macos-x86_64, windows-x86_64. Linux also uploads the uber JAR.
+3. **Integration Test** — full MySQL integration tests on Linux (uber JAR + native binary), smoke tests for all artifacts (file format verification)
+4. **Release** — collects all artifacts, generates `SHA256SUMS.txt`, creates GitHub Release with `gh release create`. Pre-release auto-detected from version suffix (e.g. `1.0.1-beta.1`). Skipped on dry runs.
+
+### How to Release
+
+```bash
+# 1. Update version in gradle.properties
+# 2. Commit and push
+git add gradle.properties
+git commit -m "chore: bump version to 1.0.2"
+git push
+
+# 3. Tag and push — triggers the release workflow
+git tag v1.0.2
+git push origin v1.0.2
+```
+
+Or use `workflow_dispatch` from GitHub Actions UI with optional `dry_run: true` to test the pipeline.
+
+### Release Artifacts
+
+For version `X.Y.Z`, the GitHub Release contains:
+
+| File | Description |
+|------|-------------|
+| `flamingock-X.Y.Z-linux-x86_64` | Native binary for Linux |
+| `flamingock-X.Y.Z-macos-arm64` | Native binary for macOS Apple Silicon |
+| `flamingock-X.Y.Z-macos-x86_64` | Native binary for macOS Intel |
+| `flamingock-X.Y.Z-windows-x86_64.exe` | Native binary for Windows |
+| `flamingock-cli-X.Y.Z.jar` | Platform-independent uber JAR (requires JVM 21+) |
+| `SHA256SUMS.txt` | SHA-256 checksums for all artifacts |
 
 ## Common Development Tasks
 
