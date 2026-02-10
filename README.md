@@ -1,0 +1,216 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/flamingock/flamingock-java/main/misc/logo-with-text.png" alt="Flamingock" width="400"/>
+</p>
+
+<h3 align="center">Execute Flamingock operations from the command line.</h3>
+
+<p align="center">
+  Apply changes, audit history, diagnose issues — before, after, or outside your application lifecycle.
+</p>
+
+<p align="center">
+  <a href="https://central.sonatype.com/artifact/io.flamingock/flamingock-cli"><img src="https://img.shields.io/maven-central/v/io.flamingock/flamingock-cli?label=Maven%20Central&color=blue" alt="Maven Central"/></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"/></a>
+</p>
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Apply pending changes
+flamingock execute apply --jar ./my-app.jar
+
+# Or run with the uber JAR
+java -jar flamingock-cli-uber.jar execute apply --jar ./my-app.jar
+```
+
+---
+
+## 🧩 What is Flamingock CLI?
+
+Flamingock CLI is a command-line tool that lets you run [Flamingock](https://github.com/flamingock/flamingock-java) operations **outside your application's normal startup**. Instead of executing changes when your app boots, the CLI spawns your application JAR in a separate JVM process, runs the requested operation, and returns structured results.
+
+This means you can:
+- **Apply changes before deployment** — run changes in CI/CD pipelines, not during startup
+- **Audit change history** — inspect what was applied, when, and by whom
+- **Diagnose and fix issues** — get actionable guidance when something goes wrong
+- **Preview changes safely** — dry-run to see what would be applied without side effects
+
+Built for **DevOps engineers**, **Platform engineers**, **Administrators**, and **Developers** who need reliable, scriptable control over their Flamingock operations.
+
+---
+
+## 💡 Commands
+
+### Operations
+
+| Command         | Description                                             |
+|-----------------|---------------------------------------------------------|
+| `execute apply` | Apply pending changes                                   |
+| `audit list`    | List audit entries (snapshot or full history)           |
+| `audit fix`     | Fix a change's audit state (`APPLIED` or `ROLLED_BACK`) |
+| `issue list`    | List changes with audit issues                          |
+| `issue get`     | Get details and resolution guidance for an issue        |
+
+### Global Options
+
+| Option              | Description                                              |
+|---------------------|----------------------------------------------------------|
+| `--log-level`, `-l` | Application log level (`debug`, `info`, `warn`, `error`) |
+| `--quiet`, `-q`     | Suppress non-essential output                            |
+| `--no-color`        | Disable colored output                                   |
+| `--help`, `-h`      | Show help                                                |
+| `--version`         | Show version                                             |
+
+---
+
+## 📋 Usage Examples
+
+```bash
+# Apply pending changes
+flamingock execute apply --jar ./my-app.jar
+
+# List current audit state
+flamingock audit list --jar ./my-app.jar
+
+# List full chronological audit history
+flamingock audit list --jar ./my-app.jar --history
+
+# List audit with extended details (execution ID, class, method, hostname)
+flamingock audit list --jar ./my-app.jar --extended
+
+# Filter audit entries since a date
+flamingock audit list --jar ./my-app.jar --since 2025-01-01
+
+# Fix a failed change
+flamingock audit fix --jar ./my-app.jar -c user-change-id -r APPLIED
+
+# List changes with issues
+flamingock issue list --jar ./my-app.jar
+
+# Get detailed guidance for a specific issue
+flamingock issue get --jar ./my-app.jar -c user-change-id --guidance
+
+# JSON output for CI/CD pipelines
+flamingock issue list --jar ./my-app.jar --json
+
+# Quiet mode for scripts
+flamingock execute apply --jar ./my-app.jar --quiet
+```
+
+---
+
+## 🔑 Key Features
+
+- **Process isolation** — Spawns your app in a separate JVM. No ClassLoader conflicts, no version mismatches, total isolation between the CLI and your application.
+
+- **CI/CD friendly** — JSON output mode, proper stdout/stderr separation, standard exit codes, and non-interactive execution make it easy to integrate into any pipeline.
+
+- **Actionable error messages** — Every error tells you what went wrong and how to fix it, with specific commands to run next.
+
+- **GraalVM native image** — Build a standalone native binary with no JVM required. Fast startup, low memory footprint.
+
+- **Comprehensive auditing** — Full chronological history, snapshot views, extended details, and date filtering for complete visibility into your change history.
+
+---
+
+## 📦 Installation
+
+### Option 1: Uber JAR (requires JVM)
+
+Download the uber JAR from [Maven Central](https://central.sonatype.com/artifact/io.flamingock/flamingock-cli) or build from source:
+
+```bash
+./gradlew shadowJar
+java -jar build/libs/flamingock-cli-uber.jar --help
+```
+
+### Option 2: Native Binary (no JVM required)
+
+Build a standalone executable with GraalVM:
+
+```bash
+./gradlew nativeCompile
+./build/native/nativeCompile/flamingock --help
+```
+
+---
+
+## 🏗️ Building from Source
+
+### Prerequisites
+
+- **Java 21** or later
+- **GraalVM 21** (only for native image builds)
+
+### Build Commands
+
+```bash
+# Build the project
+./gradlew build
+
+# Run tests
+./gradlew test
+
+# Create uber JAR (fat JAR with all dependencies)
+./gradlew shadowJar
+
+# Build native image (requires GraalVM)
+./gradlew nativeCompile
+```
+
+---
+
+## ⚙️ How It Works
+
+```
+┌─────────────────────┐         ┌──────────────────────────────────────┐
+│   Flamingock CLI     │ spawns  │   Your Application JAR               │
+│                      │────────▶│                                      │
+│   - Parses args      │         │   Runs with:                         │
+│   - Launches JVM     │◀────────│   --flamingock.cli.mode=true         │
+│   - Reads result     │exit code│   --flamingock.operation=<OP>        │
+│   - Formats output   │◀────────│   --flamingock.output-file=<tmp>     │
+└─────────────────────┘  file    └──────────────────────────────────────┘
+```
+
+The CLI itself contains **no execution logic**. It is purely an orchestrator:
+
+1. Creates a temporary file for the response
+2. Spawns your application JAR with Flamingock flags
+3. Your app executes the operation and writes the result
+4. CLI reads, formats, and displays the result
+5. Returns the appropriate exit code
+
+---
+
+## 🔢 Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Execution error (change failed, etc.) |
+| `2` | Usage error (invalid arguments) |
+| `126` | JAR not found or not executable |
+| `130` | Interrupted (Ctrl+C) |
+
+---
+
+## 📘 Learn More
+
+- [CLI Documentation](https://docs.flamingock.io/cli)
+- [Flamingock Documentation](https://docs.flamingock.io)
+- [Flamingock Java (main repo)](https://github.com/flamingock/flamingock-java)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please check the [main repository](https://github.com/flamingock/flamingock-java) for contributing guidelines, or open an issue in this repo to report bugs and suggest improvements.
+
+---
+
+## 📜 License
+
+Copyright 2026 Flamingock Contributors. Licensed under the [Apache License 2.0](LICENSE.md).

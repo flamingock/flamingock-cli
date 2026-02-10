@@ -1,5 +1,5 @@
                                  Apache License
-                           Version 2.0, January 2004
+                           Version 2.0, January 2006
                         http://www.apache.org/licenses/
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
@@ -175,7 +175,7 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
 END OF TERMS AND CONDITIONS
 
-Copyright 2024 Flamingock Contributors
+Copyright 2026 Flamingock Contributors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
