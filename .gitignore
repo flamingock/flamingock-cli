@@ -7,6 +7,7 @@
 # Package Files #
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+!integration-tests/test-apps/*.jar
 
 *.war
 *.ear
