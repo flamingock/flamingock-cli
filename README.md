@@ -165,14 +165,14 @@ Build a standalone executable with GraalVM:
 ## ⚙️ How It Works
 
 ```
-┌─────────────────────┐         ┌──────────────────────────────────────┐
+┌──────────────────────┐         ┌──────────────────────────────────────┐
 │   Flamingock CLI     │ spawns  │   Your Application JAR               │
 │                      │────────▶│                                      │
 │   - Parses args      │         │   Runs with:                         │
 │   - Launches JVM     │◀────────│   --flamingock.cli.mode=true         │
 │   - Reads result     │exit code│   --flamingock.operation=<OP>        │
 │   - Formats output   │◀────────│   --flamingock.output-file=<tmp>     │
-└─────────────────────┘  file    └──────────────────────────────────────┘
+└──────────────────────┘  file   └──────────────────────────────────────┘
 ```
 
 The CLI itself contains **no execution logic**. It is purely an orchestrator:
