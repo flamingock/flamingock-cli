@@ -254,6 +254,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Download all native binaries
         uses: actions/download-artifact@v4
@@ -294,6 +297,25 @@ jobs:
           git tag "${TAG}"
           git push origin "${TAG}"
 
+      - name: Generate release notes (stable)
+        if: ${{ !contains(needs.validate.outputs.version, '-') }}
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --current
+        env:
+          OUTPUT: release-notes.md
+          GIT_CLIFF__GIT__IGNORE_TAGS: ".*-.*"
+
+      - name: Generate release notes (pre-release)
+        if: ${{ contains(needs.validate.outputs.version, '-') }}
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --current --latest
+        env:
+          OUTPUT: release-notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -303,6 +325,6 @@ jobs:
 
           gh release create "${TAG}" \
             --title "Flamingock CLI v${VERSION}" \
-            --generate-notes \
+            --notes-file release-notes.md \
             ${{ steps.prerelease.outputs.flag }} \
             release-assets/*

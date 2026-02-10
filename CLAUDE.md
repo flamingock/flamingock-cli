@@ -438,7 +438,17 @@ Triggers on `workflow_dispatch` only (manual). Requires a `version` input (e.g. 
 1. **Validate** — reads version from the `version` input, validates semver format, warns if it doesn't match `gradle.properties`
 2. **Build Native** (matrix: 4 targets) — builds native binaries for linux-x86_64, macos-arm64, macos-x86_64, windows-x86_64. Linux also uploads the uber JAR.
 3. **Integration Test** — full MySQL integration tests on Linux (uber JAR + native binary), smoke tests for all artifacts (file format verification)
-4. **Release** — collects all artifacts, generates `SHA256SUMS.txt`, creates git tag (`v<version>`), creates GitHub Release with `gh release create`. Pre-release auto-detected from version suffix (e.g. `1.0.1-beta.1`). Skipped on dry runs.
+4. **Release** — collects all artifacts, generates `SHA256SUMS.txt`, creates git tag (`v<version>`), generates release notes via git-cliff, creates GitHub Release with `gh release create`. Pre-release auto-detected from version suffix (e.g. `1.0.1-beta.1`). Skipped on dry runs.
+
+### Release Notes Generation
+
+Release notes are generated automatically from **conventional commits** using [git-cliff](https://git-cliff.org/) (`orhun/git-cliff-action@v4`), configured in `cliff.toml` at the repo root. Commits are grouped into: Features, Bug Fixes, Refactor, Documentation, Performance, Testing, Miscellaneous, and Reverts.
+
+**Range behavior:**
+- **Stable releases** (e.g. `1.0.1`): aggregates all changes since the last stable tag, ignoring intermediate pre-release tags
+- **Pre-releases** (e.g. `1.0.1-beta.1`): shows only changes since the immediately preceding tag
+
+This requires commits to follow the [Conventional Commits](https://www.conventionalcommits.org/) format (e.g. `feat(cli): add dry-run mode`, `fix(process): handle SIGTERM`). Non-conventional commits are filtered out.
 
 ### How to Release
 
