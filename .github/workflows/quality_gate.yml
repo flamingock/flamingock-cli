@@ -1,11 +1,12 @@
-name: PR Quality Gate
+name: Quality Gate
 
 on:
   pull_request:
     branches: [develop]
+  workflow_dispatch:
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
