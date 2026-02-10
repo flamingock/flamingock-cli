@@ -172,6 +172,27 @@ Build a standalone executable with GraalVM:
 ./gradlew nativeCompile
 ```
 
+### Integration Tests
+
+End-to-end tests run the CLI against real MySQL databases using Docker:
+
+```bash
+# Build first, then run integration tests
+./gradlew build
+./integration-tests/run-tests.sh
+
+# Test a native binary instead
+CLI_CMD="./build/native/nativeCompile/flamingock" ./integration-tests/run-tests.sh
+
+# Use a custom MySQL port
+MYSQL_PORT=3308 ./integration-tests/run-tests.sh
+
+# Use an existing MySQL instance (skip Docker)
+MYSQL_HOST=myhost MYSQL_PORT=3306 ./integration-tests/run-tests.sh --no-docker
+```
+
+Run `./integration-tests/run-tests.sh --help` for all options.
+
 ---
 
 ## ⚙️ How It Works

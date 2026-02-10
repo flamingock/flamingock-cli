@@ -387,10 +387,41 @@ FileNotFoundException: ./my-app.jar
 
 ## Testing Approach
 
+### Unit Tests
+
 - Unit tests for individual components
-- Integration tests that spawn actual JVM processes
 - Mock-based tests for `JvmLauncher` and `ResponseResultReader`
 - **Test all user-facing output** for consistency and clarity
+
+```bash
+./gradlew test
+```
+
+### Integration Tests
+
+End-to-end tests that run the real CLI against real MySQL databases via Docker. Located in `integration-tests/`.
+
+```
+integration-tests/
+├── docker-compose.yml          # MySQL 8 with configurable port
+├── init-databases.sql          # Creates two isolated test databases
+├── run-tests.sh                # Main test runner (chmod +x)
+└── test-apps/                  # Test JARs (Spring Boot + standalone, MySQL-backed)
+```
+
+**Quick run:**
+```bash
+./gradlew build
+./integration-tests/run-tests.sh
+```
+
+**Key options:**
+- `--no-docker` — skip Docker, use an external MySQL instance
+- `--verbose` — show full CLI output per test
+- `CLI_CMD="./flamingock"` — test a native binary instead of the uber JAR
+- `MYSQL_PORT=3308` — use a custom port to avoid conflicts
+
+The script runs 8 tests (4 per JAR type: Spring Boot and standalone), verifying `execute apply`, `audit list`, `issue list`, and idempotent re-runs. Docker cleanup is handled automatically via trap, even on Ctrl+C.
 
 ## Common Development Tasks
 
