@@ -51,6 +51,12 @@ import java.util.Optional;
                 "  flamingock issue get --jar ./app.jar -c my-change-id --guidance",
                 "  flamingock --log-level=debug execute apply --jar ./my-app.jar",
                 "",
+                "@|bold Passing arguments to the spawned application:|@",
+                "  flamingock execute apply --jar app.jar -- --spring.profiles.active=prod",
+                "  flamingock execute apply --jar app.jar -J -Xmx512m -J -Xms256m",
+                "  flamingock execute apply --jar app.jar -J -Xmx512m -- --spring.datasource.url=jdbc:mysql://host/db",
+                "  flamingock execute apply --jar app.jar -J \"-Dmy.prop=hello world\"",
+                "",
                 "For detailed help on any command, use: flamingock <command> --help"
         },
         subcommands = {ExecuteCommand.class, AuditCommand.class, IssueCommand.class},

@@ -26,6 +26,7 @@ import io.flamingock.internal.common.core.operation.OperationType;
 import io.flamingock.internal.common.core.response.data.AuditListResponseData;
 import io.flamingock.internal.common.core.response.data.AuditListResponseData.AuditEntryDto;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
@@ -83,6 +84,9 @@ public class ListCommand implements Callable<Integer> {
             description = "Show extended information (execution ID, class, method, hostname)")
     private boolean extended;
 
+    @Mixin
+    private PassthroughArgsMixin passthroughArgs;
+
     private final CommandExecutor commandExecutor;
 
     /**
@@ -135,11 +139,16 @@ public class ListCommand implements Callable<Integer> {
             operationArgs.put("flamingock.audit.extended", "true");
         }
 
+        // Validate passthrough args
+        passthroughArgs.validate();
+
         // Non-execution ops: only stream output if log level is explicitly set
         ExecutionOptions options = ExecutionOptions.builder()
                 .logLevel(logLevel.orElse(null))
                 .streamOutput(logLevel.isPresent())
                 .operationArgs(operationArgs)
+                .jvmArgs(passthroughArgs.getJvmArgs())
+                .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
         CommandResult<AuditListResponseData> result = commandExecutor.execute(

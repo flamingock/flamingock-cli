@@ -72,7 +72,8 @@ public class JvmLauncher {
      * @return the launch result
      */
     public LaunchResult launch(String jarPath) {
-        return launch(jarPath, null, null, null, true, Collections.emptyMap());
+        return launch(jarPath, null, null, null, true, Collections.emptyMap(),
+                Collections.emptyList(), Collections.emptyList());
     }
 
     /**
@@ -88,6 +89,26 @@ public class JvmLauncher {
      * @return the launch result
      */
     public LaunchResult launch(String jarPath, OperationType operation, String outputFile, String logLevel, boolean streamOutput, Map<String, String> operationArgs) {
+        return launch(jarPath, operation, outputFile, logLevel, streamOutput, operationArgs,
+                Collections.emptyList(), Collections.emptyList());
+    }
+
+    /**
+     * Launches the application with Flamingock CLI mode enabled, including passthrough arguments.
+     *
+     * @param jarPath       absolute path to the application JAR
+     * @param operation     the Flamingock operation to execute, or null for default
+     * @param outputFile    path to the output file for result communication, or null if not needed
+     * @param logLevel      the application log level (debug, info, warn, error), or null for app default
+     * @param streamOutput  whether to stream stdout/stderr to console (false = consume silently)
+     * @param operationArgs additional operation-specific arguments to pass
+     * @param jvmArgs       JVM arguments to place before -jar/-cp (e.g., -Xmx512m)
+     * @param appArgs       application arguments to append at the end of the command
+     * @return the launch result
+     */
+    public LaunchResult launch(String jarPath, OperationType operation, String outputFile, String logLevel,
+                               boolean streamOutput, Map<String, String> operationArgs,
+                               List<String> jvmArgs, List<String> appArgs) {
         String operationName = operation != null ? operation.name() : null;
         List<String> command;
         JarType jarType;
@@ -103,7 +124,7 @@ public class JvmLauncher {
             return LaunchResult.missingFlamingockRuntime();
         }
 
-        command = buildCommand(jarPath, operationName, outputFile, logLevel, jarType, operationArgs);
+        command = buildCommand(jarPath, operationName, outputFile, logLevel, jarType, operationArgs, jvmArgs, appArgs);
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(new File(jarPath).getParentFile());
@@ -209,10 +230,30 @@ public class JvmLauncher {
      * @return the command as a list of strings
      */
     List<String> buildCommand(String jarPath, String operation, String outputFile, String logLevel, JarType jarType, Map<String, String> operationArgs) {
+        return buildCommand(jarPath, operation, outputFile, logLevel, jarType, operationArgs,
+                Collections.emptyList(), Collections.emptyList());
+    }
+
+    /**
+     * Builds the command line for launching the application with the specified JAR type and passthrough args.
+     *
+     * @param jarPath       path to the JAR file
+     * @param operation     the Flamingock operation to execute, or null for default
+     * @param outputFile    path to the output file for result communication, or null if not needed
+     * @param logLevel      the application log level (debug, info, warn, error), or null for app default
+     * @param jarType       the type of JAR
+     * @param operationArgs additional operation-specific arguments
+     * @param jvmArgs       JVM arguments to place before -jar/-cp
+     * @param appArgs       application arguments to append at the end
+     * @return the command as a list of strings
+     */
+    List<String> buildCommand(String jarPath, String operation, String outputFile, String logLevel,
+                              JarType jarType, Map<String, String> operationArgs,
+                              List<String> jvmArgs, List<String> appArgs) {
         if (jarType == JarType.SPRING_BOOT) {
-            return buildSpringBootCommand(jarPath, operation, outputFile, logLevel, operationArgs);
+            return buildSpringBootCommand(jarPath, operation, outputFile, logLevel, operationArgs, jvmArgs, appArgs);
         } else {
-            return buildPlainUberCommand(jarPath, operation, outputFile, logLevel, operationArgs);
+            return buildPlainUberCommand(jarPath, operation, outputFile, logLevel, operationArgs, jvmArgs, appArgs);
         }
     }
 
@@ -240,10 +281,33 @@ public class JvmLauncher {
      * @return the command as a list of strings
      */
     List<String> buildSpringBootCommand(String jarPath, String operation, String outputFile, String logLevel, Map<String, String> operationArgs) {
+        return buildSpringBootCommand(jarPath, operation, outputFile, logLevel, operationArgs,
+                Collections.emptyList(), Collections.emptyList());
+    }
+
+    /**
+     * Builds the command line for launching a Spring Boot application with passthrough args.
+     *
+     * @param jarPath       path to the JAR file
+     * @param operation     the Flamingock operation to execute, or null for default
+     * @param outputFile    path to the output file for result communication, or null if not needed
+     * @param logLevel      the application log level (debug, info, warn, error), or null for app default
+     * @param operationArgs additional operation-specific arguments
+     * @param jvmArgs       JVM arguments to place before -jar
+     * @param appArgs       application arguments to append at the end
+     * @return the command as a list of strings
+     */
+    List<String> buildSpringBootCommand(String jarPath, String operation, String outputFile, String logLevel,
+                                        Map<String, String> operationArgs, List<String> jvmArgs, List<String> appArgs) {
         List<String> command = new ArrayList<>();
 
         // Find the java executable
         command.add(getJavaExecutable());
+
+        // Add JVM arguments before -jar
+        if (jvmArgs != null) {
+            command.addAll(jvmArgs);
+        }
 
         // Add the JAR
         command.add("-jar");
@@ -283,6 +347,11 @@ public class JvmLauncher {
             }
         }
 
+        // Add user-provided application arguments at the end
+        if (appArgs != null) {
+            command.addAll(appArgs);
+        }
+
         return command;
     }
 
@@ -310,10 +379,33 @@ public class JvmLauncher {
      * @return the command as a list of strings
      */
     List<String> buildPlainUberCommand(String jarPath, String operation, String outputFile, String logLevel, Map<String, String> operationArgs) {
+        return buildPlainUberCommand(jarPath, operation, outputFile, logLevel, operationArgs,
+                Collections.emptyList(), Collections.emptyList());
+    }
+
+    /**
+     * Builds the command line for launching a plain uber JAR application with passthrough args.
+     *
+     * @param jarPath       path to the JAR file
+     * @param operation     the Flamingock operation to execute, or null for default
+     * @param outputFile    path to the output file for result communication, or null if not needed
+     * @param logLevel      the application log level (debug, info, warn, error), or null for app default
+     * @param operationArgs additional operation-specific arguments
+     * @param jvmArgs       JVM arguments to place before -cp
+     * @param appArgs       application arguments to append at the end
+     * @return the command as a list of strings
+     */
+    List<String> buildPlainUberCommand(String jarPath, String operation, String outputFile, String logLevel,
+                                       Map<String, String> operationArgs, List<String> jvmArgs, List<String> appArgs) {
         List<String> command = new ArrayList<>();
 
         // Find the java executable
         command.add(getJavaExecutable());
+
+        // Add JVM arguments before -cp
+        if (jvmArgs != null) {
+            command.addAll(jvmArgs);
+        }
 
         // Use classpath instead of -jar
         command.add("-cp");
@@ -345,6 +437,11 @@ public class JvmLauncher {
             for (Map.Entry<String, String> entry : operationArgs.entrySet()) {
                 command.add("--" + entry.getKey() + "=" + entry.getValue());
             }
+        }
+
+        // Add user-provided application arguments at the end
+        if (appArgs != null) {
+            command.addAll(appArgs);
         }
 
         return command;

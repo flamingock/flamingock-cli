@@ -15,8 +15,10 @@
  */
 package io.flamingock.cli.executor.orchestration;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,11 +29,15 @@ public class ExecutionOptions {
     private final String logLevel;
     private final boolean streamOutput;
     private final Map<String, String> operationArgs;
+    private final List<String> jvmArgs;
+    private final List<String> appArgs;
 
     private ExecutionOptions(Builder builder) {
         this.logLevel = builder.logLevel;
         this.streamOutput = builder.streamOutput;
         this.operationArgs = Collections.unmodifiableMap(new HashMap<>(builder.operationArgs));
+        this.jvmArgs = Collections.unmodifiableList(new ArrayList<>(builder.jvmArgs));
+        this.appArgs = Collections.unmodifiableList(new ArrayList<>(builder.appArgs));
     }
 
     /**
@@ -62,6 +68,24 @@ public class ExecutionOptions {
     }
 
     /**
+     * Returns JVM arguments to place before {@code -jar}/{@code -cp} in the spawned command.
+     *
+     * @return the JVM arguments list (unmodifiable)
+     */
+    public List<String> getJvmArgs() {
+        return jvmArgs;
+    }
+
+    /**
+     * Returns application arguments to append at the end of the spawned command.
+     *
+     * @return the application arguments list (unmodifiable)
+     */
+    public List<String> getAppArgs() {
+        return appArgs;
+    }
+
+    /**
      * Creates a new builder.
      *
      * @return a new builder instance
@@ -77,6 +101,8 @@ public class ExecutionOptions {
         private String logLevel;
         private boolean streamOutput = true;
         private Map<String, String> operationArgs = new HashMap<>();
+        private List<String> jvmArgs = new ArrayList<>();
+        private List<String> appArgs = new ArrayList<>();
 
         private Builder() {
         }
@@ -123,6 +149,28 @@ public class ExecutionOptions {
          */
         public Builder operationArg(String key, String value) {
             this.operationArgs.put(key, value);
+            return this;
+        }
+
+        /**
+         * Sets JVM arguments to place before -jar/-cp in the spawned command.
+         *
+         * @param jvmArgs the JVM arguments
+         * @return this builder
+         */
+        public Builder jvmArgs(List<String> jvmArgs) {
+            this.jvmArgs = jvmArgs != null ? jvmArgs : new ArrayList<>();
+            return this;
+        }
+
+        /**
+         * Sets application arguments to append at the end of the spawned command.
+         *
+         * @param appArgs the application arguments
+         * @return this builder
+         */
+        public Builder appArgs(List<String> appArgs) {
+            this.appArgs = appArgs != null ? appArgs : new ArrayList<>();
             return this;
         }
 

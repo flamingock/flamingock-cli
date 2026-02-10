@@ -25,6 +25,7 @@ import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
 import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
@@ -67,6 +68,9 @@ public class ApplyCommand implements Callable<Integer> {
             required = true)
     private File jarFile;
 
+    @Mixin
+    private PassthroughArgsMixin passthroughArgs;
+
     private final CommandExecutor commandExecutor;
 
     /**
@@ -107,10 +111,15 @@ public class ApplyCommand implements Callable<Integer> {
             return EXIT_JAR_NOT_FOUND;
         }
 
+        // Validate passthrough args
+        passthroughArgs.validate();
+
         // Execution ops: always stream output by default
         ExecutionOptions options = ExecutionOptions.builder()
                 .logLevel(logLevel.orElse(null))
                 .streamOutput(true)
+                .jvmArgs(passthroughArgs.getJvmArgs())
+                .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
         CommandResult<ExecuteResponseData> result = commandExecutor.execute(

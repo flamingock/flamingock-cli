@@ -26,6 +26,7 @@ import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
 import io.flamingock.internal.common.core.response.data.IssueListResponseData;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
@@ -58,6 +59,9 @@ public class ListIssueCommand implements Callable<Integer> {
             description = "Output in JSON format")
     private boolean json;
 
+    @Mixin
+    private PassthroughArgsMixin passthroughArgs;
+
     private final CommandExecutor commandExecutor;
 
     public ListIssueCommand() {
@@ -88,9 +92,14 @@ public class ListIssueCommand implements Callable<Integer> {
             return EXIT_JAR_NOT_FOUND;
         }
 
+        // Validate passthrough args
+        passthroughArgs.validate();
+
         ExecutionOptions options = ExecutionOptions.builder()
                 .logLevel(logLevel.orElse(null))
                 .streamOutput(logLevel.isPresent())
+                .jvmArgs(passthroughArgs.getJvmArgs())
+                .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
         CommandResult<IssueListResponseData> result = commandExecutor.execute(
