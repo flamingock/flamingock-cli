@@ -17,7 +17,11 @@ package io.flamingock.cli.executor.process;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -263,6 +267,186 @@ class JvmLauncherTest {
 
         assertTrue(command.contains("-cp"));
         assertTrue(command.contains(JvmLauncher.FLAMINGOCK_CLI_ENTRY_POINT));
+    }
+
+    // ================== Passthrough Args Tests (Spring Boot) ==================
+
+    @Test
+    void buildSpringBootCommand_jvmArgsPlacedBeforeJar() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> jvmArgs = Arrays.asList("-Xmx512m", "-Xms256m");
+        List<String> command = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), jvmArgs, Collections.emptyList());
+
+        int xmxIndex = command.indexOf("-Xmx512m");
+        int xmsIndex = command.indexOf("-Xms256m");
+        int jarFlagIndex = command.indexOf("-jar");
+
+        assertTrue(xmxIndex > 0, "JVM arg -Xmx512m should be present");
+        assertTrue(xmsIndex > 0, "JVM arg -Xms256m should be present");
+        assertTrue(xmxIndex < jarFlagIndex, "-Xmx512m should appear before -jar");
+        assertTrue(xmsIndex < jarFlagIndex, "-Xms256m should appear before -jar");
+    }
+
+    @Test
+    void buildSpringBootCommand_appArgsPlacedAtEnd() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> appArgs = Arrays.asList("--spring.profiles.active=prod", "--spring.datasource.url=jdbc:mysql://host/db");
+        List<String> command = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), Collections.emptyList(), appArgs);
+
+        int lastIndex = command.size() - 1;
+        assertEquals("--spring.datasource.url=jdbc:mysql://host/db", command.get(lastIndex));
+        assertEquals("--spring.profiles.active=prod", command.get(lastIndex - 1));
+    }
+
+    @Test
+    void buildSpringBootCommand_combinedJvmAndAppArgs() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> jvmArgs = Arrays.asList("-Xmx512m");
+        List<String> appArgs = Arrays.asList("--spring.profiles.active=prod");
+        List<String> command = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), jvmArgs, appArgs);
+
+        int xmxIndex = command.indexOf("-Xmx512m");
+        int jarFlagIndex = command.indexOf("-jar");
+        int profileIndex = command.indexOf("--spring.profiles.active=prod");
+
+        assertTrue(xmxIndex < jarFlagIndex, "JVM arg should be before -jar");
+        assertEquals(command.size() - 1, profileIndex, "App arg should be at the end");
+    }
+
+    @Test
+    void buildSpringBootCommand_appArgsAfterOperationArgs() {
+        JvmLauncher launcher = new JvmLauncher();
+        Map<String, String> operationArgs = new HashMap<>();
+        operationArgs.put("flamingock.change-id", "my-change");
+        List<String> appArgs = Arrays.asList("--my.custom.prop=value");
+        List<String> command = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                operationArgs, Collections.emptyList(), appArgs);
+
+        int operationArgIndex = command.indexOf("--flamingock.change-id=my-change");
+        int appArgIndex = command.indexOf("--my.custom.prop=value");
+
+        assertTrue(operationArgIndex > 0, "Operation arg should be present");
+        assertTrue(appArgIndex > operationArgIndex, "App arg should come after operation arg");
+        assertEquals(command.size() - 1, appArgIndex, "App arg should be at the end");
+    }
+
+    @Test
+    void buildSpringBootCommand_emptyPassthroughProducesSameResult() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> withoutPassthrough = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", "EXECUTE", null, null);
+        List<String> withEmptyPassthrough = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), Collections.emptyList(), Collections.emptyList());
+
+        assertEquals(withoutPassthrough.size(), withEmptyPassthrough.size());
+        assertEquals(withoutPassthrough, withEmptyPassthrough);
+    }
+
+    @Test
+    void buildSpringBootCommand_argsWithSpecialChars() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> appArgs = Arrays.asList("--spring.datasource.url=jdbc:mysql://host:3306/db?useSSL=true&serverTimezone=UTC");
+        List<String> command = launcher.buildSpringBootCommand(
+                "/path/to/app.jar", null, null, null,
+                Collections.emptyMap(), Collections.emptyList(), appArgs);
+
+        assertTrue(command.contains("--spring.datasource.url=jdbc:mysql://host:3306/db?useSSL=true&serverTimezone=UTC"));
+    }
+
+    // ================== Passthrough Args Tests (Plain Uber) ==================
+
+    @Test
+    void buildPlainUberCommand_jvmArgsPlacedBeforeCp() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> jvmArgs = Arrays.asList("-Xmx1g");
+        List<String> command = launcher.buildPlainUberCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), jvmArgs, Collections.emptyList());
+
+        int xmxIndex = command.indexOf("-Xmx1g");
+        int cpIndex = command.indexOf("-cp");
+
+        assertTrue(xmxIndex > 0, "JVM arg should be present");
+        assertTrue(xmxIndex < cpIndex, "-Xmx1g should appear before -cp");
+    }
+
+    @Test
+    void buildPlainUberCommand_appArgsPlacedAtEnd() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> appArgs = Arrays.asList("--my.custom.arg=value");
+        List<String> command = launcher.buildPlainUberCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), Collections.emptyList(), appArgs);
+
+        assertEquals("--my.custom.arg=value", command.get(command.size() - 1));
+    }
+
+    @Test
+    void buildPlainUberCommand_emptyPassthroughProducesSameResult() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> withoutPassthrough = launcher.buildPlainUberCommand(
+                "/path/to/app.jar", "EXECUTE", null, null);
+        List<String> withEmptyPassthrough = launcher.buildPlainUberCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                Collections.emptyMap(), Collections.emptyList(), Collections.emptyList());
+
+        assertEquals(withoutPassthrough.size(), withEmptyPassthrough.size());
+        assertEquals(withoutPassthrough, withEmptyPassthrough);
+    }
+
+    @Test
+    void buildPlainUberCommand_combinedJvmAndAppArgs() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> jvmArgs = Arrays.asList("-Xmx256m");
+        List<String> appArgs = Arrays.asList("--custom.prop=test");
+        List<String> command = launcher.buildPlainUberCommand(
+                "/path/to/app.jar", null, null, null,
+                Collections.emptyMap(), jvmArgs, appArgs);
+
+        int xmxIndex = command.indexOf("-Xmx256m");
+        int cpIndex = command.indexOf("-cp");
+        int customIndex = command.indexOf("--custom.prop=test");
+
+        assertTrue(xmxIndex < cpIndex, "JVM arg should be before -cp");
+        assertEquals(command.size() - 1, customIndex, "App arg should be at the end");
+    }
+
+    // ================== buildCommand routing with passthrough ==================
+
+    @Test
+    void buildCommand_springBoot_passesJvmAndAppArgs() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> jvmArgs = Arrays.asList("-Xmx512m");
+        List<String> appArgs = Arrays.asList("--spring.profiles.active=prod");
+        List<String> command = launcher.buildCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                JarType.SPRING_BOOT, Collections.emptyMap(), jvmArgs, appArgs);
+
+        assertTrue(command.contains("-Xmx512m"));
+        assertTrue(command.contains("--spring.profiles.active=prod"));
+        assertTrue(command.contains("-jar"));
+    }
+
+    @Test
+    void buildCommand_plainUber_passesJvmAndAppArgs() {
+        JvmLauncher launcher = new JvmLauncher();
+        List<String> jvmArgs = Arrays.asList("-Xmx512m");
+        List<String> appArgs = Arrays.asList("--custom.arg=value");
+        List<String> command = launcher.buildCommand(
+                "/path/to/app.jar", "EXECUTE", null, null,
+                JarType.PLAIN_UBER, Collections.emptyMap(), jvmArgs, appArgs);
+
+        assertTrue(command.contains("-Xmx512m"));
+        assertTrue(command.contains("--custom.arg=value"));
+        assertTrue(command.contains("-cp"));
     }
 
     // ================== General Tests ==================

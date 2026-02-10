@@ -60,6 +60,7 @@ Built for **DevOps engineers**, **Platform engineers**, **Administrators**, and 
 | `--log-level`, `-l` | Application log level (`debug`, `info`, `warn`, `error`) |
 | `--quiet`, `-q`     | Suppress non-essential output                            |
 | `--no-color`        | Disable colored output                                   |
+| `-J`, `--java-opt`  | JVM argument for the spawned process (repeatable)        |
 | `--help`, `-h`      | Show help                                                |
 | `--version`         | Show version                                             |
 
@@ -97,6 +98,15 @@ flamingock issue list --jar ./my-app.jar --json
 
 # Quiet mode for scripts
 flamingock execute apply --jar ./my-app.jar --quiet
+
+# Pass application arguments to the spawned JVM
+flamingock execute apply --jar ./my-app.jar -- --spring.profiles.active=prod --spring.datasource.url=jdbc:mysql://prod/db
+
+# Pass JVM arguments
+flamingock execute apply --jar ./my-app.jar -J -Xmx512m -J -Xms256m
+
+# Combine JVM and application arguments
+flamingock audit list --jar ./my-app.jar -J -Xmx1g -- --spring.profiles.active=staging
 ```
 
 ---
@@ -108,6 +118,8 @@ flamingock execute apply --jar ./my-app.jar --quiet
 - **CI/CD friendly** — JSON output mode, proper stdout/stderr separation, standard exit codes, and non-interactive execution make it easy to integrate into any pipeline.
 
 - **Actionable error messages** — Every error tells you what went wrong and how to fix it, with specific commands to run next.
+
+- **Argument passthrough** — Pass application arguments (`--`) and JVM options (`-J`) to the spawned process. Reserved Flamingock flags are validated and protected.
 
 - **GraalVM native image** — Build a standalone native binary with no JVM required. Fast startup, low memory footprint.
 
@@ -165,15 +177,20 @@ Build a standalone executable with GraalVM:
 ## ⚙️ How It Works
 
 ```
-┌──────────────────────┐         ┌──────────────────────────────────────┐
-│   Flamingock CLI     │ spawns  │   Your Application JAR               │
-│                      │────────▶│                                      │
-│   - Parses args      │         │   Runs with:                         │
-│   - Launches JVM     │◀────────│   --flamingock.cli.mode=true         │
-│   - Reads result     │exit code│   --flamingock.operation=<OP>        │
-│   - Formats output   │◀────────│   --flamingock.output-file=<tmp>     │
-└──────────────────────┘  file   └──────────────────────────────────────┘
+┌─────────────────────┐         ┌──────────────────────────────────────┐
+│   Flamingock CLI    │ spawns  │   User's App (spawned JVM)           │
+│   (Picocli-based)   │────────►│                                      │
+│                     │         │   --spring.main.web-application-     │
+│   - Parse args      │◄────────│     type=none                        │
+│   - Build command   │exit code│   --flamingock.cli.mode=true         │
+│   - Launch JVM      │         │   --flamingock.operation=...         │
+│   - Read result     │◄────────│   --flamingock.output-file=...       │
+└─────────────────────┘  file   └──────────────────────────────────────┘
 ```
+
+User-provided arguments are forwarded to the spawned process:
+- **`-J` / `--java-opt`**: JVM arguments placed before `-jar`/`-cp` (e.g., `-J -Xmx512m`)
+- **`--` separator**: Application arguments appended at the end (e.g., `-- --spring.profiles.active=prod`)
 
 The CLI itself contains **no execution logic**. It is purely an orchestrator:
 
@@ -187,13 +204,13 @@ The CLI itself contains **no execution logic**. It is purely an orchestrator:
 
 ## 🔢 Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Success |
-| `1` | Execution error (change failed, etc.) |
-| `2` | Usage error (invalid arguments) |
-| `126` | JAR not found or not executable |
-| `130` | Interrupted (Ctrl+C) |
+| Code  | Meaning                               |
+|-------|---------------------------------------|
+| `0`   | Success                               |
+| `1`   | Execution error (change failed, etc.) |
+| `2`   | Usage error (invalid arguments)       |
+| `126` | JAR not found or not executable       |
+| `130` | Interrupted (Ctrl+C)                  |
 
 ---
 

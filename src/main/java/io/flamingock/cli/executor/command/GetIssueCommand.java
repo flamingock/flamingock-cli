@@ -26,6 +26,7 @@ import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
 import io.flamingock.internal.common.core.response.data.IssueGetResponseData;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
@@ -68,6 +69,9 @@ public class GetIssueCommand implements Callable<Integer> {
             description = "Show resolution guidance")
     private boolean guidance;
 
+    @Mixin
+    private PassthroughArgsMixin passthroughArgs;
+
     private final CommandExecutor commandExecutor;
 
     public GetIssueCommand() {
@@ -106,10 +110,15 @@ public class GetIssueCommand implements Callable<Integer> {
             operationArgs.put("flamingock.guidance", "true");
         }
 
+        // Validate passthrough args
+        passthroughArgs.validate();
+
         ExecutionOptions options = ExecutionOptions.builder()
                 .logLevel(logLevel.orElse(null))
                 .streamOutput(logLevel.isPresent())
                 .operationArgs(operationArgs)
+                .jvmArgs(passthroughArgs.getJvmArgs())
+                .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
         CommandResult<IssueGetResponseData> result = commandExecutor.execute(

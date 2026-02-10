@@ -90,6 +90,8 @@ The CLI uses a **process-based architecture** - it spawns the user's application
 | `ISSUE_LIST`       | `flamingock issue list --jar ./app.jar`                        | List changes with issues              |
 | `ISSUE_GET`        | `flamingock issue get --jar ./app.jar -c <id> --guidance`      | Get details and guidance for an issue |
 
+All commands support `-- [APP_ARGS]` for passing application arguments and `-J <jvm-arg>` for JVM arguments to the spawned process.
+
 ## Module Structure
 
 ```
@@ -171,6 +173,15 @@ All commands delegate to `CommandExecutor` which handles the common flow:
 5. Clean up temporary files
 
 Commands only handle their specific presentation logic.
+
+### PassthroughArgsMixin Pattern
+
+A Picocli `@Mixin` that captures user-provided passthrough arguments for the spawned JVM process. It handles:
+- **`-J` / `--java-opt`** (repeatable `@Option`): JVM arguments placed before `-jar`/`-cp`
+- **`APP_ARGS`** (`@Parameters` after `--`): Application arguments appended at the end of the spawned command
+- **Reserved arg validation**: Rejects `--flamingock.*`, `--spring.main.web-application-type`, and `--spring.main.banner-mode` with actionable error messages
+
+This mixin is included in all 5 leaf commands via `@Mixin private PassthroughArgsMixin passthroughArgs`.
 
 ### Result Formatting
 
@@ -265,6 +276,26 @@ Plus operation-specific arguments like:
 - `--flamingock.resolution=<APPLIED|ROLLED_BACK>` for fix operation
 - `--flamingock.audit.history=true` for audit list with history
 - `--flamingock.guidance=true` for issue get with guidance
+
+### Passthrough Arguments
+
+Users can forward additional arguments to the spawned process:
+
+- **`--` separator** for application arguments — appended at the END of the spawned command, after all Flamingock flags:
+  ```
+  flamingock execute apply --jar app.jar -- --spring.profiles.active=prod
+  ```
+- **`-J` / `--java-opt`** for JVM arguments — placed BEFORE `-jar`/`-cp` in the spawned command:
+  ```
+  flamingock execute apply --jar app.jar -J -Xmx512m -J "-Dmy.secret=value"
+  ```
+
+**Reserved arg validation**: The following prefixes are blocked from app args (after `--`) because they are controlled by the CLI:
+- `--flamingock.*` — entire Flamingock namespace
+- `--spring.main.web-application-type` — safety flag (CLI enforces `none`)
+- `--spring.main.banner-mode` — CLI-controlled
+
+Spring profiles (`--spring.profiles.active`), datasource URLs, and custom properties are NOT reserved — users need to control these. The CLI uses `--spring.profiles.include=flamingock-cli` (additive) so user profiles are safe.
 
 ## Relationship with flamingock-java
 

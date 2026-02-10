@@ -25,6 +25,7 @@ import io.flamingock.internal.common.core.operation.OperationType;
 import io.flamingock.internal.common.core.recovery.Resolution;
 import io.flamingock.internal.common.core.response.data.AuditFixResponseData;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
@@ -67,6 +68,9 @@ public class FixCommand implements Callable<Integer> {
             required = true)
     private Resolution resolution;
 
+    @Mixin
+    private PassthroughArgsMixin passthroughArgs;
+
     private final CommandExecutor commandExecutor;
 
     public FixCommand() {
@@ -101,10 +105,15 @@ public class FixCommand implements Callable<Integer> {
         operationArgs.put("flamingock.change-id", changeId);
         operationArgs.put("flamingock.resolution", resolution.name());
 
+        // Validate passthrough args
+        passthroughArgs.validate();
+
         ExecutionOptions options = ExecutionOptions.builder()
                 .logLevel(logLevel.orElse(null))
                 .streamOutput(logLevel.isPresent())
                 .operationArgs(operationArgs)
+                .jvmArgs(passthroughArgs.getJvmArgs())
+                .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
         CommandResult<AuditFixResponseData> result = commandExecutor.execute(
