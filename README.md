@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/flamingock/flamingock-java/main/misc/logo-with-text.png" alt="Flamingock" width="400"/>
+  <img src="misc/logo-with-text.png" width="420px" alt="Flamingock logo" />
 </p>
 
 <h3 align="center">Execute Flamingock operations from the command line.</h3>
