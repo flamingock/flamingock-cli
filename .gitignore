@@ -1,0 +1,29 @@
+# Gradle
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Compiled
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Test outputs
+test-output/
