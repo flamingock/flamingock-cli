@@ -1,13 +1,11 @@
 name: Release
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Tag to release (e.g. v1.0.1). If empty, reads version from gradle.properties'
-        required: false
+      version:
+        description: 'Version to release (e.g. 1.0.1). No "v" prefix needed.'
+        required: true
         type: string
       dry_run:
         description: 'Dry run — build and test but skip creating the GitHub Release'
@@ -40,20 +38,8 @@ jobs:
       - name: Extract and validate version
         id: version
         run: |
-          # Determine version source
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-          elif [[ -n "${{ github.event.inputs.tag }}" ]]; then
-            TAG="${{ github.event.inputs.tag }}"
-          else
-            # Read from gradle.properties
-            GRADLE_VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
-            TAG="v${GRADLE_VERSION}"
-            echo "No tag provided — using version from gradle.properties: ${TAG}"
-          fi
-
-          # Strip 'v' prefix to get version
-          VERSION="${TAG#v}"
+          VERSION="${{ github.event.inputs.version }}"
+          TAG="v${VERSION}"
 
           # Validate semver format
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
@@ -61,10 +47,10 @@ jobs:
             exit 1
           fi
 
-          # Verify tag version matches gradle.properties
+          # Verify input version matches gradle.properties
           GRADLE_VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
           if [[ "${VERSION}" != "${GRADLE_VERSION}" ]]; then
-            echo "::warning::Tag version '${VERSION}' does not match gradle.properties version '${GRADLE_VERSION}'"
+            echo "::warning::Input version '${VERSION}' does not match gradle.properties version '${GRADLE_VERSION}'"
           fi
 
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
@@ -301,6 +287,12 @@ jobs:
             echo "flag=" >> "$GITHUB_OUTPUT"
             echo "Stable release: ${VERSION}"
           fi
+
+      - name: Create git tag
+        run: |
+          TAG="${{ needs.validate.outputs.tag }}"
+          git tag "${TAG}"
+          git push origin "${TAG}"
 
       - name: Create GitHub Release
         env:

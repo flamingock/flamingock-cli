@@ -433,28 +433,21 @@ Triggers on PRs to `develop` and `workflow_dispatch`. Runs three jobs:
 
 ### Release Workflow (`release.yml`)
 
-Triggers on `v*` tag push or `workflow_dispatch` (with optional `tag` and `dry_run` inputs). Four jobs:
+Triggers on `workflow_dispatch` only (manual). Requires a `version` input (e.g. `1.0.1`) and an optional `dry_run` boolean. Four jobs:
 
-1. **Validate** — extracts version from tag (or `gradle.properties`), validates semver format, checks tag matches `gradle.properties`
+1. **Validate** — reads version from the `version` input, validates semver format, warns if it doesn't match `gradle.properties`
 2. **Build Native** (matrix: 4 targets) — builds native binaries for linux-x86_64, macos-arm64, macos-x86_64, windows-x86_64. Linux also uploads the uber JAR.
 3. **Integration Test** — full MySQL integration tests on Linux (uber JAR + native binary), smoke tests for all artifacts (file format verification)
-4. **Release** — collects all artifacts, generates `SHA256SUMS.txt`, creates GitHub Release with `gh release create`. Pre-release auto-detected from version suffix (e.g. `1.0.1-beta.1`). Skipped on dry runs.
+4. **Release** — collects all artifacts, generates `SHA256SUMS.txt`, creates git tag (`v<version>`), creates GitHub Release with `gh release create`. Pre-release auto-detected from version suffix (e.g. `1.0.1-beta.1`). Skipped on dry runs.
 
 ### How to Release
 
-```bash
-# 1. Update version in gradle.properties
-# 2. Commit and push
-git add gradle.properties
-git commit -m "chore: bump version to 1.0.2"
-git push
+1. Update version in `gradle.properties`, commit and push
+2. Go to **GitHub Actions → Release → "Run workflow"**
+3. Enter the version (e.g. `1.0.2`, no `v` prefix)
+4. Optionally check **dry_run** to test without creating a release
 
-# 3. Tag and push — triggers the release workflow
-git tag v1.0.2
-git push origin v1.0.2
-```
-
-Or use `workflow_dispatch` from GitHub Actions UI with optional `dry_run: true` to test the pipeline.
+The workflow creates the git tag (`v1.0.2`) automatically during the release job.
 
 ### Release Artifacts
 
