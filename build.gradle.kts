@@ -17,13 +17,12 @@ repositories {
 }
 
 dependencies {
+    implementation("io.flamingock:flamingock-core-commons:$flamingockVersion")
+
     // CLI Framework
     implementation("info.picocli:picocli:$picocliVersion")
     annotationProcessor("info.picocli:picocli-codegen:$picocliVersion")
 
-    // Core dependencies for response handling (from Maven Central)
-    implementation("io.flamingock:flamingock-core-commons:$flamingockVersion")
-    implementation("io.flamingock:general-util:$flamingockVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
 
     // Test dependencies
