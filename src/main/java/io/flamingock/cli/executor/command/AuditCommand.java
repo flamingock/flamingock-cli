@@ -15,6 +15,7 @@
  */
 package io.flamingock.cli.executor.command;
 
+import io.flamingock.cli.executor.FlamingockExecutorCli;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -36,7 +37,16 @@ import picocli.CommandLine.Command;
 public class AuditCommand implements Runnable {
 
     @CommandLine.ParentCommand
-    private Object parent;
+    private FlamingockExecutorCli parent;
+
+    /**
+     * Returns the root CLI command.
+     *
+     * @return the parent FlamingockExecutorCli instance, or null if not set
+     */
+    public FlamingockExecutorCli getParent() {
+        return parent;
+    }
 
     @Override
     public void run() {

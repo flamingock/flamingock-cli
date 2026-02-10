@@ -1,6 +1,7 @@
 plugins {
     id("flamingock.java-library")
     id("flamingock.license")
+    id("org.graalvm.buildtools.native") version "0.10.6"
     `maven-publish`
 }
 
@@ -71,6 +72,40 @@ tasks.test {
 
 tasks.named("assemble").configure {
     dependsOn(uberJar)
+}
+
+// GraalVM Native Image configuration
+graalvmNative {
+    binaries {
+        named("main") {
+            imageName.set("flamingock")
+            mainClass.set("io.flamingock.cli.executor.FlamingockExecutorCli")
+            sharedLibrary.set(false)
+            buildArgs.addAll(
+                "--no-fallback",
+                "--install-exit-handlers"
+            )
+        }
+    }
+}
+
+// Generate version properties file for native image (no MANIFEST.MF available)
+val generateVersionProperties by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/resources/version")
+    outputs.dir(outputDir)
+    doLast {
+        val propsFile = outputDir.get().file("flamingock-cli-executor.properties").asFile
+        propsFile.parentFile.mkdirs()
+        propsFile.writeText("version=${project.version}\n")
+    }
+}
+
+sourceSets.main {
+    resources.srcDir(generateVersionProperties.map { it.outputs.files.singleFile })
+}
+
+tasks.named("processResources").configure {
+    dependsOn(generateVersionProperties)
 }
 
 // Maven publishing configuration

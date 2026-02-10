@@ -356,7 +356,12 @@ public class JvmLauncher {
      * @return the java executable path
      */
     String getJavaExecutable() {
-        String javaHome = System.getProperty("java.home");
+        // Prefer JAVA_HOME env var (always available, even in native images where
+        // the java.home system property may not be set)
+        String javaHome = System.getenv("JAVA_HOME");
+        if (javaHome == null || javaHome.isEmpty()) {
+            javaHome = System.getProperty("java.home");
+        }
         if (javaHome != null && !javaHome.isEmpty()) {
             String separator = File.separator;
             String executable = javaHome + separator + "bin" + separator + "java";

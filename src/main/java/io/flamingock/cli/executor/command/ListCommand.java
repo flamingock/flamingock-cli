@@ -183,20 +183,6 @@ public class ListCommand implements Callable<Integer> {
     }
 
     private FlamingockExecutorCli getRootCommand() {
-        if (parent == null) {
-            return null;
-        }
-        // Navigate up the command hierarchy to find the root
-        try {
-            java.lang.reflect.Field parentField = AuditCommand.class.getDeclaredField("parent");
-            parentField.setAccessible(true);
-            Object grandParent = parentField.get(parent);
-            if (grandParent instanceof FlamingockExecutorCli) {
-                return (FlamingockExecutorCli) grandParent;
-            }
-        } catch (Exception e) {
-            // Fall through
-        }
-        return null;
+        return parent != null ? parent.getParent() : null;
     }
 }

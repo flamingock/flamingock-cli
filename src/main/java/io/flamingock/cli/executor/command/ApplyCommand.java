@@ -24,7 +24,6 @@ import io.flamingock.cli.executor.output.ExecutionResultFormatter;
 import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
 import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -143,25 +142,6 @@ public class ApplyCommand implements Callable<Integer> {
     }
 
     private FlamingockExecutorCli getRootCommand() {
-        if (parent == null) {
-            return null;
-        }
-        // Navigate up the command hierarchy to find the root
-        CommandLine.Model.CommandSpec spec = parent.getClass().getAnnotation(Command.class) != null
-                ? CommandLine.Model.CommandSpec.forAnnotatedObject(parent)
-                : null;
-
-        // Try to get the parent directly through field access
-        try {
-            java.lang.reflect.Field parentField = ExecuteCommand.class.getDeclaredField("parent");
-            parentField.setAccessible(true);
-            Object grandParent = parentField.get(parent);
-            if (grandParent instanceof FlamingockExecutorCli) {
-                return (FlamingockExecutorCli) grandParent;
-            }
-        } catch (Exception e) {
-            // Fall through
-        }
-        return null;
+        return parent != null ? parent.getParent() : null;
     }
 }
