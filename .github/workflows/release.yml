@@ -110,6 +110,9 @@ jobs:
           SRC="build/native/nativeCompile/${{ matrix.binary_name }}"
           DEST="flamingock-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.artifact_suffix }}"
           cp "${SRC}" "${DEST}"
+          if [[ "${{ matrix.os }}" != "windows" ]]; then
+            chmod +x "${DEST}"
+          fi
           echo "Renamed ${SRC} → ${DEST}"
           ls -lh "${DEST}"
 
@@ -305,6 +308,49 @@ jobs:
           args: --current --latest
         env:
           OUTPUT: release-notes.md
+
+      - name: Append installation instructions to release notes
+        run: |
+          cat >> release-notes.md << 'INSTALL_EOF'
+
+          ---
+
+          ## Installation
+
+          Download the appropriate binary for your platform from the assets below, then follow the instructions for your OS.
+
+          ### macOS (Apple Silicon)
+
+          ```bash
+          # Make executable
+          chmod +x flamingock-*-macos-arm64
+
+          # Remove macOS quarantine (required for unsigned binaries)
+          xattr -d com.apple.quarantine flamingock-*-macos-arm64
+
+          # Move to PATH
+          sudo mv flamingock-*-macos-arm64 /usr/local/bin/flamingock
+          ```
+
+          ### Linux
+
+          ```bash
+          chmod +x flamingock-*-linux-x86_64
+          sudo mv flamingock-*-linux-x86_64 /usr/local/bin/flamingock
+          ```
+
+          ### Windows
+
+          No additional steps required. Rename to `flamingock.exe` and add to your `PATH`.
+
+          ### Platform-independent JAR
+
+          Requires JVM 21+:
+
+          ```bash
+          java -jar flamingock-cli-*.jar --help
+          ```
+          INSTALL_EOF
 
       - name: Create GitHub Release
         env:
