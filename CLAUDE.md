@@ -436,7 +436,7 @@ Triggers on PRs to `develop` and `workflow_dispatch`. Runs three jobs:
 Triggers on `workflow_dispatch` only (manual). Requires a `version` input (e.g. `1.0.1`) and an optional `dry_run` boolean. Four jobs:
 
 1. **Validate** — reads version from the `version` input, validates semver format, warns if it doesn't match `gradle.properties`
-2. **Build Native** (matrix: 4 targets) — builds native binaries for linux-x86_64, macos-arm64, macos-x86_64, windows-x86_64. Linux also uploads the uber JAR.
+2. **Build Native** (matrix: 3 targets) — builds native binaries for linux-x86_64, macos-arm64, windows-x86_64. Linux also uploads the uber JAR.
 3. **Integration Test** — full MySQL integration tests on Linux (uber JAR + native binary), smoke tests for all artifacts (file format verification)
 4. **Release** — collects all artifacts, generates `SHA256SUMS.txt`, creates git tag (`v<version>`), generates release notes via git-cliff, creates GitHub Release with `gh release create`. Pre-release auto-detected from version suffix (e.g. `1.0.1-beta.1`). Skipped on dry runs.
 
@@ -467,7 +467,6 @@ For version `X.Y.Z`, the GitHub Release contains:
 |------|-------------|
 | `flamingock-X.Y.Z-linux-x86_64` | Native binary for Linux |
 | `flamingock-X.Y.Z-macos-arm64` | Native binary for macOS Apple Silicon |
-| `flamingock-X.Y.Z-macos-x86_64` | Native binary for macOS Intel |
 | `flamingock-X.Y.Z-windows-x86_64.exe` | Native binary for Windows |
 | `flamingock-cli-X.Y.Z.jar` | Platform-independent uber JAR (requires JVM 21+) |
 | `SHA256SUMS.txt` | SHA-256 checksums for all artifacts |
