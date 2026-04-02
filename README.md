@@ -129,41 +129,33 @@ flamingock audit list --jar ./my-app.jar -J -Xmx1g -- --spring.profiles.active=s
 
 ## 📦 Installation
 
-### Option 1: Download from GitHub Releases (recommended)
+Choose the option that best fits your platform:
 
-Download pre-built binaries from the [Releases page](https://github.com/flamingock/flamingock-cli/releases/latest):
+### Install script (recommended for most users)
 
-| Platform       | File                                    |
-|----------------|-----------------------------------------|
-| Linux x86_64   | `flamingock-<version>-linux-x86_64`     |
-| macOS ARM64    | `flamingock-<version>-macos-arm64`      |
-| macOS x86_64   | `flamingock-<version>-macos-x86_64`     |
-| Windows x86_64 | `flamingock-<version>-windows-x86_64.exe` |
-| Any (JVM 21+)  | `flamingock-cli-<version>.jar`          |
+#### macOS/Linux/WSL
 
 ```bash
-# Example: Linux x86_64
-curl -Lo flamingock https://github.com/flamingock/flamingock-cli/releases/latest/download/flamingock-1.0.1-linux-x86_64
-chmod +x flamingock
-./flamingock --help
+curl -fsSL https://get.flamingock.io/install.sh | bash
+
+# Specific version or custom install directory (no sudo)
+FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin curl -fsSL https://get.flamingock.io/install.sh | bash
 ```
 
-### Option 2: Uber JAR (requires JVM)
+#### Windows (PowerShell)
 
-Download the uber JAR from [Maven Central](https://central.sonatype.com/artifact/io.flamingock/flamingock-cli) or build from source:
+```powershell
+irm https://get.flamingock.io/install.ps1 | iex
 
-```bash
-./gradlew build
-java -jar build/libs/flamingock-cli-*-uber.jar --help
+# Specific version
+$env:FLAMINGOCK_VERSION="1.1.0"; irm https://get.flamingock.io/install.ps1 | iex
 ```
 
-### Option 3: Native Binary from Source (no JVM required)
-
-Build a standalone executable with GraalVM:
+### macOS/Linux Homebrew
 
 ```bash
-./gradlew nativeCompile
-./build/native/nativeCompile/flamingock --help
+brew tap flamingock/tap
+brew install flamingock
 ```
 
 ---
@@ -186,9 +178,11 @@ Build a standalone executable with GraalVM:
 
 # Create uber JAR (fat JAR with all dependencies — runs as part of build)
 ./gradlew build
+java -jar build/libs/flamingock-cli-*-uber.jar --help
 
 # Build native image (requires GraalVM)
 ./gradlew nativeCompile
+./build/native/nativeCompile/flamingock --help
 ```
 
 ### Integration Tests
