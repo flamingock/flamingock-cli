@@ -3,12 +3,8 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (e.g. 1.0.1). No "v" prefix needed.'
-        required: true
-        type: string
       dry_run:
-        description: 'Dry run — build and test but skip creating the GitHub Release'
+        description: 'Dry run — build and test but skip creating the GitHub Release and updating homebrew tap'
         required: false
         type: boolean
         default: false
@@ -38,8 +34,11 @@ jobs:
       - name: Extract and validate version
         id: version
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          TAG="v${VERSION}"
+          VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
+          if [[ -z "${VERSION}" ]]; then
+              echo "::error::Could not extract version from gradle.properties"
+              exit 1
+          fi
 
           # Validate semver format
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
@@ -47,16 +46,10 @@ jobs:
             exit 1
           fi
 
-          # Verify input version matches gradle.properties
-          GRADLE_VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
-          if [[ "${VERSION}" != "${GRADLE_VERSION}" ]]; then
-            echo "::warning::Input version '${VERSION}' does not match gradle.properties version '${GRADLE_VERSION}'"
-          fi
-
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Version: ${VERSION}"
-          echo "Tag: ${TAG}"
+          echo "Tag: v${VERSION}"
 
   # ── Job 2: Build native binaries (matrix) ───────────────────────────────────
   build-native:
@@ -321,22 +314,31 @@ jobs:
 
           ### Install script (recommended for most users)
 
-          #### macOS/Linux/WSL
+          #### Linux/WSL
 
             ```bash
-            curl -fsSL https://get.flamingock.io | bash
+            curl -fsSL https://flamingock.io/cli/install/linux | bash
 
             # Specific version or custom install directory (no sudo)
-            FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin curl -fsSL https://get.flamingock.io/install.sh | bash
+            curl -fsSL https://flamingock.io/cli/install/linux | FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin bash
+            ```
+
+          #### macOS
+
+            ```bash
+            curl -fsSL https://flamingock.io/cli/install/macos | bash
+
+            # Specific version or custom install directory (no sudo)
+            curl -fsSL https://flamingock.io/cli/install/macos | FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin bash
             ```
 
           #### Windows (PowerShell)
 
             ```powershell
-            irm https://get.flamingock.io/install.ps1 | iex
+            irm https://flamingock.io/cli/install/win | iex
 
             # Specific version
-            $env:FLAMINGOCK_VERSION="1.1.0"; irm https://get.flamingock.io/install.ps1 | iex
+            $env:FLAMINGOCK_VERSION="1.1.0"; irm https://flamingock.io/cli/install/win | iex
             ```
 
           ### macOS/Linux Homebrew

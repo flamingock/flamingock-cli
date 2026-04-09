@@ -133,22 +133,31 @@ Choose the option that best fits your platform:
 
 ### Install script (recommended for most users)
 
-#### macOS/Linux/WSL
+#### Linux/WSL
 
 ```bash
-curl -fsSL https://get.flamingock.io/install.sh | bash
+curl -fsSL https://flamingock.io/cli/install/linux | bash
 
 # Specific version or custom install directory (no sudo)
-FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin curl -fsSL https://get.flamingock.io/install.sh | bash
+curl -fsSL https://flamingock.io/cli/install/linux | FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin bash
+```
+
+#### macOS
+
+```bash
+curl -fsSL https://flamingock.io/cli/install/macos | bash
+
+# Specific version or custom install directory (no sudo)
+curl -fsSL https://flamingock.io/cli/install/macos | FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin bash
 ```
 
 #### Windows (PowerShell)
 
 ```powershell
-irm https://get.flamingock.io/install.ps1 | iex
+irm https://flamingock.io/cli/install/win | iex
 
 # Specific version
-$env:FLAMINGOCK_VERSION="1.1.0"; irm https://get.flamingock.io/install.ps1 | iex
+$env:FLAMINGOCK_VERSION="1.1.0"; irm https://flamingock.io/cli/install/win | iex
 ```
 
 ### macOS/Linux Homebrew

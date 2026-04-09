@@ -31,6 +31,15 @@ install_flamingock() {
     exit 1
   fi
 
+  # macOS x86_64 has no native binary — redirect to the JVM JAR
+  if [ "$OS" = "macos" ] && [ "$ARCH" = "x86_64" ]; then
+    echo "Error: No native binary available for macOS x86_64."
+    echo ""
+    echo "Use the platform-independent JAR instead (requires JRE 21+):"
+    echo "  https://github.com/flamingock/flamingock-cli/releases/latest"
+    exit 1
+  fi
+
   # Resolve latest version
   if [ "$VERSION" = "latest" ]; then
     VERSION=$(curl -fsSL "https://api.github.com/repos/flamingock/flamingock-cli/releases/latest" \
