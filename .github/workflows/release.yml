@@ -3,12 +3,8 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (e.g. 1.0.1). No "v" prefix needed.'
-        required: true
-        type: string
       dry_run:
-        description: 'Dry run — build and test but skip creating the GitHub Release'
+        description: 'Dry run — build and test but skip creating the GitHub Release and updating homebrew tap'
         required: false
         type: boolean
         default: false
@@ -38,8 +34,11 @@ jobs:
       - name: Extract and validate version
         id: version
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          TAG="v${VERSION}"
+          VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
+          if [[ -z "${VERSION}" ]]; then
+              echo "::error::Could not extract version from gradle.properties"
+              exit 1
+          fi
 
           # Validate semver format
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
@@ -47,16 +46,10 @@ jobs:
             exit 1
           fi
 
-          # Verify input version matches gradle.properties
-          GRADLE_VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
-          if [[ "${VERSION}" != "${GRADLE_VERSION}" ]]; then
-            echo "::warning::Input version '${VERSION}' does not match gradle.properties version '${GRADLE_VERSION}'"
-          fi
-
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Version: ${VERSION}"
-          echo "Tag: ${TAG}"
+          echo "Tag: v${VERSION}"
 
   # ── Job 2: Build native binaries (matrix) ───────────────────────────────────
   build-native:
@@ -317,9 +310,49 @@ jobs:
 
           ## Installation
 
-          Download the appropriate binary for your platform from the assets below, then follow the instructions for your OS.
+          Choose the option that best fits your platform:
 
-          ### macOS (Apple Silicon)
+          ### Install script (recommended for most users)
+
+          #### Linux/WSL
+
+            ```bash
+            curl -fsSL https://flamingock.io/cli/install/linux | bash
+
+            # Specific version or custom install directory (no sudo)
+            curl -fsSL https://flamingock.io/cli/install/linux | FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin bash
+            ```
+
+          #### macOS
+
+            ```bash
+            curl -fsSL https://flamingock.io/cli/install/macos | bash
+
+            # Specific version or custom install directory (no sudo)
+            curl -fsSL https://flamingock.io/cli/install/macos | FLAMINGOCK_VERSION=1.1.0 FLAMINGOCK_INSTALL_DIR=~/.local/bin bash
+            ```
+
+          #### Windows (PowerShell)
+
+            ```powershell
+            irm https://flamingock.io/cli/install/win | iex
+
+            # Specific version
+            $env:FLAMINGOCK_VERSION="1.1.0"; irm https://flamingock.io/cli/install/win | iex
+            ```
+
+          ### macOS/Linux Homebrew
+
+          ```bash
+          brew tap flamingock/tap
+          brew install flamingock
+          ```
+
+          ### Download from GitHub Releases
+
+          #### macOS (Apple Silicon)
+
+          Download the `flamingock-*-macos-arm64` binary from the assets below. Then, in your terminal:
 
           ```bash
           # Make executable
@@ -332,20 +365,25 @@ jobs:
           sudo mv flamingock-*-macos-arm64 /usr/local/bin/flamingock
           ```
 
-          ### Linux
+          #### Linux
+
+          Download the `flamingock-*-linux-x86_64` binary from the assets below. Then, in your terminal:
 
           ```bash
+          # Make executable
           chmod +x flamingock-*-linux-x86_64
+
+          # Move to PATH
           sudo mv flamingock-*-linux-x86_64 /usr/local/bin/flamingock
           ```
 
-          ### Windows
+          #### Windows
 
-          No additional steps required. Rename to `flamingock.exe` and add to your `PATH`.
+          Download the `flamingock-*-windows-x86_64` binary from the assets below. Then, rename to `flamingock.exe` and add to your `PATH`.
 
-          ### Platform-independent JAR
+          #### Platform-independent JAR
 
-          Requires JVM 21+:
+          Requires JVM 21+. Download the `flamingock-cli-*.jar` file from the assets below. Then, in your terminal:
 
           ```bash
           java -jar flamingock-cli-*.jar --help
@@ -364,3 +402,52 @@ jobs:
             --notes-file release-notes.md \
             ${{ steps.prerelease.outputs.flag }} \
             release-assets/*
+
+  # ── Job 5: Update Homebrew tap ───────────────────────────────────────────────
+  update-homebrew-tap:
+    name: Update Homebrew Tap
+    runs-on: ubuntu-latest
+    needs: [validate, release]
+    # Only update the tap for stable releases — skip pre-releases
+    if: ${{ !(github.event.inputs.dry_run == 'true') && !contains(needs.validate.outputs.version, '-') }}
+
+    steps:
+      - name: Compute SHA256 for Homebrew bottles
+        id: sha256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          TAG="${{ needs.validate.outputs.tag }}"
+
+          # Download the binaries we need to hash
+          gh release download "${TAG}" \
+            --repo flamingock/flamingock-cli \
+            --pattern "flamingock-${VERSION}-linux-x86_64" \
+            --pattern "flamingock-${VERSION}-macos-arm64" \
+            --dir /tmp/flamingock-assets
+
+          SHA_LINUX=$(sha256sum "/tmp/flamingock-assets/flamingock-${VERSION}-linux-x86_64" | awk '{print $1}')
+          SHA_MACOS=$(sha256sum "/tmp/flamingock-assets/flamingock-${VERSION}-macos-arm64" | awk '{print $1}')
+
+          echo "sha_linux=${SHA_LINUX}" >> "$GITHUB_OUTPUT"
+          echo "sha_macos=${SHA_MACOS}" >> "$GITHUB_OUTPUT"
+          echo "Linux SHA256:  ${SHA_LINUX}"
+          echo "macOS SHA256:  ${SHA_MACOS}"
+
+      - name: Trigger tap bump via workflow_dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          SHA_LINUX="${{ steps.sha256.outputs.sha_linux }}"
+          SHA_MACOS="${{ steps.sha256.outputs.sha_macos }}"
+
+          gh workflow run bump-formula.yml \
+            --repo flamingock/homebrew-tap \
+            --ref master \
+            --field version="${VERSION}" \
+            --field sha256_linux="${SHA_LINUX}" \
+            --field sha256_macos="${SHA_MACOS}"
+
+          echo "Triggered bump-formula workflow in flamingock/homebrew-tap for v${VERSION}"
