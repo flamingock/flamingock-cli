@@ -2,7 +2,7 @@ name: Quality Gate
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
