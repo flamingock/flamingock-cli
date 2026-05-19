@@ -25,10 +25,8 @@ import io.flamingock.cli.executor.output.PendingChangesFormatter;
 import io.flamingock.cli.executor.output.PipelineAbortedFormatter;
 import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
-import io.flamingock.internal.common.core.response.data.ExecutionOutcome;
-import io.flamingock.internal.common.core.response.data.PendingChangesOutcome;
-import io.flamingock.internal.common.core.response.data.PipelineAbortedOutcome;
-import io.flamingock.internal.common.core.response.data.StagedRunOutcome;
+import io.flamingock.internal.common.core.response.ResponseError;
+import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -127,40 +125,47 @@ public class ApplyCommand implements Callable<Integer> {
                 .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
-        CommandResult<ExecutionOutcome> result = commandExecutor.execute(
+        CommandResult<ExecuteResponseData> result = commandExecutor.execute(
                 jarFile.getAbsolutePath(),
                 OperationType.EXECUTE_APPLY,
-                ExecutionOutcome.class,
+                ExecuteResponseData.class,
                 options
         );
 
         if (result.isSuccess()) {
             if (!quiet) {
-                ExecutionOutcome data = result.getData();
+                ExecuteResponseData data = result.getData();
                 if (data != null) {
-                    printOutcome(data);
+                    ExecutionResultFormatter.print(data);
                 } else {
                     ConsoleFormatter.printSuccess(result.getDurationMs());
                 }
             }
             return 0;
         } else {
-            // Print execution summary if available (even on failure, shows what was applied)
-            if (!quiet && result.getData() != null) {
-                printOutcome(result.getData());
+            if (!quiet) {
+                if (result.getData() != null) {
+                    ExecutionResultFormatter.print(result.getData());
+                }
+                ResponseError error = new ResponseError(
+                        result.getErrorCode(),
+                        result.getErrorMessage(),
+                        false
+                );
+                printEnvelopeError(error);
             }
-            ConsoleFormatter.printFailure(result.getErrorCode(), result.getErrorMessage());
             return result.getExitCode();
         }
     }
 
-    private static void printOutcome(ExecutionOutcome outcome) {
-        if (outcome instanceof StagedRunOutcome) {
-            ExecutionResultFormatter.print((StagedRunOutcome) outcome);
-        } else if (outcome instanceof PipelineAbortedOutcome) {
-            PipelineAbortedFormatter.print((PipelineAbortedOutcome) outcome);
-        } else if (outcome instanceof PendingChangesOutcome) {
-            PendingChangesFormatter.print((PendingChangesOutcome) outcome);
+    private static void printEnvelopeError(ResponseError error) {
+        String code = error.getCode();
+        if ("LOCK_ERROR".equals(code)) {
+            PipelineAbortedFormatter.print(error);
+        } else if ("PENDING_CHANGES".equals(code)) {
+            PendingChangesFormatter.print(error);
+        } else {
+            ConsoleFormatter.printFailure(error.getCode(), error.getMessage());
         }
     }
 

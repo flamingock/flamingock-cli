@@ -15,10 +15,10 @@
  */
 package io.flamingock.cli.executor.output;
 
-import io.flamingock.internal.common.core.response.data.PendingChangesOutcome;
+import io.flamingock.internal.common.core.response.ResponseError;
 
 /**
- * Formats {@link PendingChangesOutcome} for CLI output.
+ * Renders the "pending changes detected" failure scenario from an envelope-level {@link ResponseError}.
  */
 public final class PendingChangesFormatter {
 
@@ -27,22 +27,19 @@ public final class PendingChangesFormatter {
     private PendingChangesFormatter() {
     }
 
-    public static String format(PendingChangesOutcome outcome) {
+    public static String format(ResponseError error) {
         StringBuilder sb = new StringBuilder("\n");
         sb.append(SEPARATOR).append("\n");
         sb.append("PENDING CHANGES DETECTED").append("\n");
         sb.append(SEPARATOR).append("\n");
-        if (outcome.getMessage() != null) {
-            sb.append(String.format("  Message:    %s%n", outcome.getMessage()));
-        }
-        if (outcome.getTimestamp() != null) {
-            sb.append(String.format("  Detected:   %s%n", outcome.getTimestamp()));
+        if (error != null && error.getMessage() != null) {
+            sb.append(String.format("  Message:    %s%n", error.getMessage()));
         }
         sb.append(SEPARATOR).append("\n");
         return sb.toString();
     }
 
-    public static void print(PendingChangesOutcome outcome) {
-        System.out.print(format(outcome));
+    public static void print(ResponseError error) {
+        System.out.print(format(error));
     }
 }

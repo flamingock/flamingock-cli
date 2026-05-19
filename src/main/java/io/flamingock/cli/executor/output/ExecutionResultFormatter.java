@@ -18,7 +18,7 @@ package io.flamingock.cli.executor.output;
 import io.flamingock.internal.common.core.response.data.ChangeResult;
 import io.flamingock.internal.common.core.response.data.ChangeStatus;
 import io.flamingock.internal.common.core.response.data.ErrorInfo;
-import io.flamingock.internal.common.core.response.data.StagedRunOutcome;
+import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
 import io.flamingock.internal.common.core.response.data.ExecutionStatus;
 import io.flamingock.internal.common.core.response.data.StageResult;
 
@@ -41,7 +41,7 @@ public final class ExecutionResultFormatter {
      * @param result the execution result data
      * @return formatted string for display
      */
-    public static String format(StagedRunOutcome result) {
+    public static String format(ExecuteResponseData result) {
         StringBuilder sb = new StringBuilder("\n");
 
         for (StageResult stage : result.getStages()) {
@@ -58,9 +58,9 @@ public final class ExecutionResultFormatter {
         sb.append(formatStagesSummary(result));
         sb.append(formatChangesSummary(result));
 
-        // Print error details if failed
-        if (result.isFailed() && result.getError() != null) {
-            sb.append(formatErrorDetails(result.getError()));
+        // Print per-stage error details for any failed stages
+        for (StageResult stage : result.getStages()) {
+            stage.getState().getErrorInfo().ifPresent(info -> sb.append(formatErrorDetails(info)));
         }
 
         sb.append(SEPARATOR).append("\n");
@@ -136,7 +136,7 @@ public final class ExecutionResultFormatter {
     /**
      * Formats the stages summary line.
      */
-    private static String formatStagesSummary(StagedRunOutcome result) {
+    private static String formatStagesSummary(ExecuteResponseData result) {
         if (result.getFailedStages() > 0) {
             return String.format("  Stages:     %d completed, %d failed%n",
                     result.getCompletedStages(), result.getFailedStages());
@@ -148,7 +148,7 @@ public final class ExecutionResultFormatter {
     /**
      * Formats the changes summary line.
      */
-    private static String formatChangesSummary(StagedRunOutcome result) {
+    private static String formatChangesSummary(ExecuteResponseData result) {
         return String.format("  Changes:    %d applied, %d skipped, %d failed%n",
                 result.getAppliedChanges(), result.getSkippedChanges(), result.getFailedChanges());
     }
@@ -230,7 +230,7 @@ public final class ExecutionResultFormatter {
      *
      * @param result the execution result data
      */
-    public static void print(StagedRunOutcome result) {
+    public static void print(ExecuteResponseData result) {
         System.out.print(format(result));
     }
 }

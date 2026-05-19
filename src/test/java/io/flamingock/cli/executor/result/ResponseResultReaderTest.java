@@ -16,11 +16,8 @@
 package io.flamingock.cli.executor.result;
 
 import io.flamingock.internal.common.core.response.ResponseEnvelope;
-import io.flamingock.internal.common.core.response.data.AbortReason;
 import io.flamingock.internal.common.core.response.data.AuditListResponseData;
-import io.flamingock.internal.common.core.response.data.PendingChangesOutcome;
-import io.flamingock.internal.common.core.response.data.PipelineAbortedOutcome;
-import io.flamingock.internal.common.core.response.data.StagedRunOutcome;
+import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
 import io.flamingock.internal.common.core.response.data.ExecutionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -77,8 +74,8 @@ class ResponseResultReaderTest {
         Files.write(responseFile, json.getBytes(StandardCharsets.UTF_8));
 
         // When
-        ResponseResultReader.ResponseResult<StagedRunOutcome> result =
-                reader.readTyped(responseFile, StagedRunOutcome.class);
+        ResponseResultReader.ResponseResult<ExecuteResponseData> result =
+                reader.readTyped(responseFile, ExecuteResponseData.class);
 
         // Then
         assertTrue(result.isSuccess());
@@ -106,14 +103,14 @@ class ResponseResultReaderTest {
                 "    \"@type\": \"audit_list\",\n" +
                 "    \"entries\": [\n" +
                 "      {\n" +
-                "        \"taskId\": \"change-001\",\n" +
+                "        \"changeId\": \"change-001\",\n" +
                 "        \"author\": \"developer\",\n" +
                 "        \"state\": \"APPLIED\",\n" +
                 "        \"stageId\": \"stage-1\",\n" +
                 "        \"executionMillis\": 100\n" +
                 "      },\n" +
                 "      {\n" +
-                "        \"taskId\": \"change-002\",\n" +
+                "        \"changeId\": \"change-002\",\n" +
                 "        \"author\": \"developer\",\n" +
                 "        \"state\": \"APPLIED\",\n" +
                 "        \"stageId\": \"stage-1\",\n" +
@@ -155,65 +152,60 @@ class ResponseResultReaderTest {
     }
 
     @Test
-    @DisplayName("Should parse valid pipeline_aborted response JSON")
-    void shouldParseValidPipelineAbortedResponse() throws IOException {
+    @DisplayName("Should parse envelope-level lock failure response")
+    void shouldParseLockFailureResponse() throws IOException {
         String json = "{\n" +
-                "  \"success\": true,\n" +
+                "  \"success\": false,\n" +
                 "  \"operation\": \"EXECUTE_APPLY\",\n" +
                 "  \"timestamp\": \"2026-02-09T10:00:00Z\",\n" +
                 "  \"durationMs\": 50,\n" +
-                "  \"data\": {\n" +
-                "    \"@type\": \"pipeline_aborted\",\n" +
-                "    \"reason\": \"LOCK_FAILED\",\n" +
-                "    \"totalDurationMs\": 50,\n" +
-                "    \"error\": {\n" +
-                "      \"errorType\": \"LockException\",\n" +
-                "      \"message\": \"lock not acquired\",\n" +
-                "      \"changeIds\": []\n" +
-                "    }\n" +
+                "  \"data\": null,\n" +
+                "  \"error\": {\n" +
+                "    \"code\": \"LOCK_ERROR\",\n" +
+                "    \"message\": \"lock not acquired\",\n" +
+                "    \"recoverable\": true\n" +
                 "  }\n" +
                 "}";
 
         Path responseFile = tempDir.resolve("response.json");
         Files.write(responseFile, json.getBytes(StandardCharsets.UTF_8));
 
-        ResponseResultReader.ResponseResult<PipelineAbortedOutcome> result =
-                reader.readTyped(responseFile, PipelineAbortedOutcome.class);
+        Optional<ResponseEnvelope> envelope = reader.read(responseFile);
 
-        assertTrue(result.isSuccess());
-        assertNotNull(result.getData());
-        assertEquals(AbortReason.LOCK_FAILED, result.getData().getReason());
-        assertEquals(50, result.getData().getTotalDurationMs());
-        assertNotNull(result.getData().getError());
-        assertEquals("LockException", result.getData().getError().getErrorType());
-        assertEquals("lock not acquired", result.getData().getError().getMessage());
+        assertTrue(envelope.isPresent());
+        assertFalse(envelope.get().isSuccess());
+        assertNotNull(envelope.get().getError());
+        assertEquals("LOCK_ERROR", envelope.get().getError().getCode());
+        assertEquals("lock not acquired", envelope.get().getError().getMessage());
+        assertTrue(envelope.get().getError().isRecoverable());
     }
 
     @Test
-    @DisplayName("Should parse valid pending_changes response JSON")
-    void shouldParseValidPendingChangesResponse() throws IOException {
+    @DisplayName("Should parse envelope-level pending changes failure response")
+    void shouldParsePendingChangesFailureResponse() throws IOException {
         String json = "{\n" +
-                "  \"success\": true,\n" +
+                "  \"success\": false,\n" +
                 "  \"operation\": \"EXECUTE_VALIDATE\",\n" +
                 "  \"timestamp\": \"2026-02-09T10:00:00Z\",\n" +
                 "  \"durationMs\": 10,\n" +
-                "  \"data\": {\n" +
-                "    \"@type\": \"pending_changes\",\n" +
+                "  \"data\": null,\n" +
+                "  \"error\": {\n" +
+                "    \"code\": \"PENDING_CHANGES\",\n" +
                 "    \"message\": \"pending changes detected\",\n" +
-                "    \"timestamp\": \"2026-02-09T10:00:00Z\"\n" +
+                "    \"recoverable\": false\n" +
                 "  }\n" +
                 "}";
 
         Path responseFile = tempDir.resolve("response.json");
         Files.write(responseFile, json.getBytes(StandardCharsets.UTF_8));
 
-        ResponseResultReader.ResponseResult<PendingChangesOutcome> result =
-                reader.readTyped(responseFile, PendingChangesOutcome.class);
+        Optional<ResponseEnvelope> envelope = reader.read(responseFile);
 
-        assertTrue(result.isSuccess());
-        assertNotNull(result.getData());
-        assertEquals("pending changes detected", result.getData().getMessage());
-        assertNotNull(result.getData().getTimestamp());
+        assertTrue(envelope.isPresent());
+        assertFalse(envelope.get().isSuccess());
+        assertNotNull(envelope.get().getError());
+        assertEquals("PENDING_CHANGES", envelope.get().getError().getCode());
+        assertEquals("pending changes detected", envelope.get().getError().getMessage());
     }
 
     @Test

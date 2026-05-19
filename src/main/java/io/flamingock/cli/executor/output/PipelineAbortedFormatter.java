@@ -15,11 +15,10 @@
  */
 package io.flamingock.cli.executor.output;
 
-import io.flamingock.internal.common.core.response.data.ErrorInfo;
-import io.flamingock.internal.common.core.response.data.PipelineAbortedOutcome;
+import io.flamingock.internal.common.core.response.ResponseError;
 
 /**
- * Formats {@link PipelineAbortedOutcome} for CLI output.
+ * Renders the "pipeline aborted" failure scenario from an envelope-level {@link ResponseError}.
  */
 public final class PipelineAbortedFormatter {
 
@@ -28,29 +27,24 @@ public final class PipelineAbortedFormatter {
     private PipelineAbortedFormatter() {
     }
 
-    public static String format(PipelineAbortedOutcome outcome) {
+    public static String format(ResponseError error) {
         StringBuilder sb = new StringBuilder("\n");
         sb.append(SEPARATOR).append("\n");
         sb.append("PIPELINE ABORTED").append("\n");
         sb.append(SEPARATOR).append("\n");
-        sb.append(String.format("  Reason:     %s%n", outcome.getReason()));
-        sb.append(String.format("  Duration:   %sms%n", outcome.getTotalDurationMs()));
-
-        ErrorInfo error = outcome.getError();
         if (error != null) {
-            if (error.getErrorType() != null) {
-                sb.append(String.format("  Type:       %s%n", error.getErrorType()));
+            if (error.getCode() != null) {
+                sb.append(String.format("  Type:       %s%n", error.getCode()));
             }
             if (error.getMessage() != null) {
                 sb.append(String.format("  Message:    %s%n", error.getMessage()));
             }
         }
-
         sb.append(SEPARATOR).append("\n");
         return sb.toString();
     }
 
-    public static void print(PipelineAbortedOutcome outcome) {
-        System.out.print(format(outcome));
+    public static void print(ResponseError error) {
+        System.out.print(format(error));
     }
 }
