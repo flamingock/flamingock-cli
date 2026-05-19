@@ -58,9 +58,9 @@ public final class ExecutionResultFormatter {
         sb.append(formatStagesSummary(result));
         sb.append(formatChangesSummary(result));
 
-        // Print per-stage error details for any failed stages
-        for (StageResult stage : result.getStages()) {
-            stage.getState().getErrorInfo().ifPresent(info -> sb.append(formatErrorDetails(info)));
+        // Print error details if failed
+        if (result.isFailed() && result.getError() != null) {
+            sb.append(formatErrorDetails(result.getError()));
         }
 
         sb.append(SEPARATOR).append("\n");
@@ -159,9 +159,8 @@ public final class ExecutionResultFormatter {
     private static String formatErrorDetails(ErrorInfo error) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n  Error:\n");
-        if (error.getChangeIds() != null && !error.getChangeIds().isEmpty()) {
-            String label = error.getChangeIds().size() == 1 ? "Change" : "Changes";
-            sb.append(String.format("    %s:   %s%n", label, String.join(", ", error.getChangeIds())));
+        if (error.getChangeId() != null) {
+            sb.append(String.format("    Change:   %s%n", error.getChangeId()));
         }
         if (error.getStageId() != null) {
             sb.append(String.format("    Stage:    %s%n", error.getStageId()));
