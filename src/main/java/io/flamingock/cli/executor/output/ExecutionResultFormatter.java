@@ -126,7 +126,6 @@ public final class ExecutionResultFormatter {
             case FAILED:
                 return "FAILED";
             case PARTIAL:
-                return "PARTIAL";
             case NO_CHANGES:
                 return "NO CHANGES";
             default:

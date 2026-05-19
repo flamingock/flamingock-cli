@@ -103,14 +103,14 @@ class ResponseResultReaderTest {
                 "    \"@type\": \"audit_list\",\n" +
                 "    \"entries\": [\n" +
                 "      {\n" +
-                "        \"taskId\": \"change-001\",\n" +
+                "        \"changeId\": \"change-001\",\n" +
                 "        \"author\": \"developer\",\n" +
                 "        \"state\": \"APPLIED\",\n" +
                 "        \"stageId\": \"stage-1\",\n" +
                 "        \"executionMillis\": 100\n" +
                 "      },\n" +
                 "      {\n" +
-                "        \"taskId\": \"change-002\",\n" +
+                "        \"changeId\": \"change-002\",\n" +
                 "        \"author\": \"developer\",\n" +
                 "        \"state\": \"APPLIED\",\n" +
                 "        \"stageId\": \"stage-1\",\n" +
@@ -132,7 +132,7 @@ class ResponseResultReaderTest {
         assertNotNull(result.getData());
         assertNotNull(result.getData().getEntries());
         assertEquals(2, result.getData().getEntries().size());
-        assertEquals("change-001", result.getData().getEntries().get(0).getTaskId());
+        assertEquals("change-001", result.getData().getEntries().get(0).getChangeId());
         assertEquals("developer", result.getData().getEntries().get(0).getAuthor());
         assertEquals("APPLIED", result.getData().getEntries().get(0).getState());
         assertEquals(250, result.getDurationMs());
@@ -149,6 +149,63 @@ class ResponseResultReaderTest {
 
         // Then
         assertFalse(result.isPresent());
+    }
+
+    @Test
+    @DisplayName("Should parse envelope-level lock failure response")
+    void shouldParseLockFailureResponse() throws IOException {
+        String json = "{\n" +
+                "  \"success\": false,\n" +
+                "  \"operation\": \"EXECUTE_APPLY\",\n" +
+                "  \"timestamp\": \"2026-02-09T10:00:00Z\",\n" +
+                "  \"durationMs\": 50,\n" +
+                "  \"data\": null,\n" +
+                "  \"error\": {\n" +
+                "    \"code\": \"LOCK_ERROR\",\n" +
+                "    \"message\": \"lock not acquired\",\n" +
+                "    \"recoverable\": true\n" +
+                "  }\n" +
+                "}";
+
+        Path responseFile = tempDir.resolve("response.json");
+        Files.write(responseFile, json.getBytes(StandardCharsets.UTF_8));
+
+        Optional<ResponseEnvelope> envelope = reader.read(responseFile);
+
+        assertTrue(envelope.isPresent());
+        assertFalse(envelope.get().isSuccess());
+        assertNotNull(envelope.get().getError());
+        assertEquals("LOCK_ERROR", envelope.get().getError().getCode());
+        assertEquals("lock not acquired", envelope.get().getError().getMessage());
+        assertTrue(envelope.get().getError().isRecoverable());
+    }
+
+    @Test
+    @DisplayName("Should parse envelope-level pending changes failure response")
+    void shouldParsePendingChangesFailureResponse() throws IOException {
+        String json = "{\n" +
+                "  \"success\": false,\n" +
+                "  \"operation\": \"EXECUTE_VALIDATE\",\n" +
+                "  \"timestamp\": \"2026-02-09T10:00:00Z\",\n" +
+                "  \"durationMs\": 10,\n" +
+                "  \"data\": null,\n" +
+                "  \"error\": {\n" +
+                "    \"code\": \"PENDING_CHANGES\",\n" +
+                "    \"message\": \"pending changes detected\",\n" +
+                "    \"recoverable\": false\n" +
+                "  }\n" +
+                "}";
+
+        Path responseFile = tempDir.resolve("response.json");
+        Files.write(responseFile, json.getBytes(StandardCharsets.UTF_8));
+
+        Optional<ResponseEnvelope> envelope = reader.read(responseFile);
+
+        assertTrue(envelope.isPresent());
+        assertFalse(envelope.get().isSuccess());
+        assertNotNull(envelope.get().getError());
+        assertEquals("PENDING_CHANGES", envelope.get().getError().getCode());
+        assertEquals("pending changes detected", envelope.get().getError().getMessage());
     }
 
     @Test

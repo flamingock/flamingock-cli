@@ -21,8 +21,11 @@ import io.flamingock.cli.executor.orchestration.CommandResult;
 import io.flamingock.cli.executor.orchestration.ExecutionOptions;
 import io.flamingock.cli.executor.output.ConsoleFormatter;
 import io.flamingock.cli.executor.output.ExecutionResultFormatter;
+import io.flamingock.cli.executor.output.PendingChangesFormatter;
+import io.flamingock.cli.executor.output.PipelineAbortedFormatter;
 import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
+import io.flamingock.internal.common.core.response.ResponseError;
 import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -131,7 +134,6 @@ public class ApplyCommand implements Callable<Integer> {
 
         if (result.isSuccess()) {
             if (!quiet) {
-                // Print detailed execution summary
                 ExecuteResponseData data = result.getData();
                 if (data != null) {
                     ExecutionResultFormatter.print(data);
@@ -141,12 +143,29 @@ public class ApplyCommand implements Callable<Integer> {
             }
             return 0;
         } else {
-            // Print execution summary if available (even on failure, shows what was applied)
-            if (!quiet && result.getData() != null) {
-                ExecutionResultFormatter.print(result.getData());
+            if (!quiet) {
+                if (result.getData() != null) {
+                    ExecutionResultFormatter.print(result.getData());
+                }
+                ResponseError error = new ResponseError(
+                        result.getErrorCode(),
+                        result.getErrorMessage(),
+                        false
+                );
+                printEnvelopeError(error);
             }
-            ConsoleFormatter.printFailure(result.getErrorCode(), result.getErrorMessage());
             return result.getExitCode();
+        }
+    }
+
+    private static void printEnvelopeError(ResponseError error) {
+        String code = error.getCode();
+        if ("LOCK_ERROR".equals(code)) {
+            PipelineAbortedFormatter.print(error);
+        } else if ("PENDING_CHANGES".equals(code)) {
+            PendingChangesFormatter.print(error);
+        } else {
+            ConsoleFormatter.printFailure(error.getCode(), error.getMessage());
         }
     }
 
