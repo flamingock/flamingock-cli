@@ -18,7 +18,7 @@ package io.flamingock.cli.executor.output;
 import io.flamingock.internal.common.core.response.data.ChangeResult;
 import io.flamingock.internal.common.core.response.data.ChangeStatus;
 import io.flamingock.internal.common.core.response.data.ErrorInfo;
-import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
+import io.flamingock.internal.common.core.response.data.StagedRunOutcome;
 import io.flamingock.internal.common.core.response.data.ExecutionStatus;
 import io.flamingock.internal.common.core.response.data.StageResult;
 
@@ -41,7 +41,7 @@ public final class ExecutionResultFormatter {
      * @param result the execution result data
      * @return formatted string for display
      */
-    public static String format(ExecuteResponseData result) {
+    public static String format(StagedRunOutcome result) {
         StringBuilder sb = new StringBuilder("\n");
 
         for (StageResult stage : result.getStages()) {
@@ -126,7 +126,6 @@ public final class ExecutionResultFormatter {
             case FAILED:
                 return "FAILED";
             case PARTIAL:
-                return "PARTIAL";
             case NO_CHANGES:
                 return "NO CHANGES";
             default:
@@ -137,7 +136,7 @@ public final class ExecutionResultFormatter {
     /**
      * Formats the stages summary line.
      */
-    private static String formatStagesSummary(ExecuteResponseData result) {
+    private static String formatStagesSummary(StagedRunOutcome result) {
         if (result.getFailedStages() > 0) {
             return String.format("  Stages:     %d completed, %d failed%n",
                     result.getCompletedStages(), result.getFailedStages());
@@ -149,7 +148,7 @@ public final class ExecutionResultFormatter {
     /**
      * Formats the changes summary line.
      */
-    private static String formatChangesSummary(ExecuteResponseData result) {
+    private static String formatChangesSummary(StagedRunOutcome result) {
         return String.format("  Changes:    %d applied, %d skipped, %d failed%n",
                 result.getAppliedChanges(), result.getSkippedChanges(), result.getFailedChanges());
     }
@@ -160,8 +159,9 @@ public final class ExecutionResultFormatter {
     private static String formatErrorDetails(ErrorInfo error) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n  Error:\n");
-        if (error.getChangeId() != null) {
-            sb.append(String.format("    Change:   %s%n", error.getChangeId()));
+        if (error.getChangeIds() != null && !error.getChangeIds().isEmpty()) {
+            String label = error.getChangeIds().size() == 1 ? "Change" : "Changes";
+            sb.append(String.format("    %s:   %s%n", label, String.join(", ", error.getChangeIds())));
         }
         if (error.getStageId() != null) {
             sb.append(String.format("    Stage:    %s%n", error.getStageId()));
@@ -230,7 +230,7 @@ public final class ExecutionResultFormatter {
      *
      * @param result the execution result data
      */
-    public static void print(ExecuteResponseData result) {
+    public static void print(StagedRunOutcome result) {
         System.out.print(format(result));
     }
 }

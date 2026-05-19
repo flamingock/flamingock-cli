@@ -21,7 +21,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.flamingock.internal.common.core.response.ResponseEnvelope;
 import io.flamingock.internal.common.core.response.data.AuditFixResponseData;
 import io.flamingock.internal.common.core.response.data.AuditListResponseData;
-import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
+import io.flamingock.internal.common.core.response.data.PendingChangesOutcome;
+import io.flamingock.internal.common.core.response.data.PipelineAbortedOutcome;
+import io.flamingock.internal.common.core.response.data.StagedRunOutcome;
 import io.flamingock.internal.common.core.response.data.IssueGetResponseData;
 import io.flamingock.internal.common.core.response.data.IssueListResponseData;
 import io.flamingock.internal.util.JsonObjectMapper;
@@ -49,7 +51,9 @@ public class ResponseResultReader {
         objectMapper.registerSubtypes(
                 new NamedType(AuditListResponseData.class, "audit_list"),
                 new NamedType(AuditFixResponseData.class, "audit_fix"),
-                new NamedType(ExecuteResponseData.class, "execute"),
+                new NamedType(StagedRunOutcome.class, "execute"),
+                new NamedType(PipelineAbortedOutcome.class, "pipeline_aborted"),
+                new NamedType(PendingChangesOutcome.class, "pending_changes"),
                 new NamedType(IssueListResponseData.class, "issue_list"),
                 new NamedType(IssueGetResponseData.class, "issue_get")
         );

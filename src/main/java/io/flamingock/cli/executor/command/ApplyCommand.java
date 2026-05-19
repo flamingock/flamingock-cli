@@ -21,9 +21,14 @@ import io.flamingock.cli.executor.orchestration.CommandResult;
 import io.flamingock.cli.executor.orchestration.ExecutionOptions;
 import io.flamingock.cli.executor.output.ConsoleFormatter;
 import io.flamingock.cli.executor.output.ExecutionResultFormatter;
+import io.flamingock.cli.executor.output.PendingChangesFormatter;
+import io.flamingock.cli.executor.output.PipelineAbortedFormatter;
 import io.flamingock.cli.executor.util.VersionProvider;
 import io.flamingock.internal.common.core.operation.OperationType;
-import io.flamingock.internal.common.core.response.data.ExecuteResponseData;
+import io.flamingock.internal.common.core.response.data.ExecutionOutcome;
+import io.flamingock.internal.common.core.response.data.PendingChangesOutcome;
+import io.flamingock.internal.common.core.response.data.PipelineAbortedOutcome;
+import io.flamingock.internal.common.core.response.data.StagedRunOutcome;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -122,19 +127,18 @@ public class ApplyCommand implements Callable<Integer> {
                 .appArgs(passthroughArgs.getAppArgs())
                 .build();
 
-        CommandResult<ExecuteResponseData> result = commandExecutor.execute(
+        CommandResult<ExecutionOutcome> result = commandExecutor.execute(
                 jarFile.getAbsolutePath(),
                 OperationType.EXECUTE_APPLY,
-                ExecuteResponseData.class,
+                ExecutionOutcome.class,
                 options
         );
 
         if (result.isSuccess()) {
             if (!quiet) {
-                // Print detailed execution summary
-                ExecuteResponseData data = result.getData();
+                ExecutionOutcome data = result.getData();
                 if (data != null) {
-                    ExecutionResultFormatter.print(data);
+                    printOutcome(data);
                 } else {
                     ConsoleFormatter.printSuccess(result.getDurationMs());
                 }
@@ -143,10 +147,20 @@ public class ApplyCommand implements Callable<Integer> {
         } else {
             // Print execution summary if available (even on failure, shows what was applied)
             if (!quiet && result.getData() != null) {
-                ExecutionResultFormatter.print(result.getData());
+                printOutcome(result.getData());
             }
             ConsoleFormatter.printFailure(result.getErrorCode(), result.getErrorMessage());
             return result.getExitCode();
+        }
+    }
+
+    private static void printOutcome(ExecutionOutcome outcome) {
+        if (outcome instanceof StagedRunOutcome) {
+            ExecutionResultFormatter.print((StagedRunOutcome) outcome);
+        } else if (outcome instanceof PipelineAbortedOutcome) {
+            PipelineAbortedFormatter.print((PipelineAbortedOutcome) outcome);
+        } else if (outcome instanceof PendingChangesOutcome) {
+            PendingChangesFormatter.print((PendingChangesOutcome) outcome);
         }
     }
 

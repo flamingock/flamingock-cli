@@ -183,7 +183,7 @@ public class TableFormatter {
     private String getColumnValue(AuditEntryDto entry, int columnIndex) {
         switch (columnIndex) {
             case 0: // Change ID
-                return entry.getTaskId();
+                return entry.getChangeId();
             case 2: // Author
                 return entry.getAuthor();
             case 3: // Time
@@ -196,7 +196,7 @@ public class TableFormatter {
     private String getExtendedColumnValue(AuditEntryDto entry, int columnIndex) {
         switch (columnIndex) {
             case 0: // Change ID
-                return entry.getTaskId();
+                return entry.getChangeId();
             case 2: // Exec ID
                 return truncate(entry.getExecutionId(), EXECUTION_ID_WIDTH);
             case 3: // Author
