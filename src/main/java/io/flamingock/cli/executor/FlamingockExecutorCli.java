@@ -17,6 +17,7 @@ package io.flamingock.cli.executor;
 
 import io.flamingock.cli.executor.command.AuditCommand;
 import io.flamingock.cli.executor.command.ExecuteCommand;
+import io.flamingock.cli.executor.command.InstallSkillsCommand;
 import io.flamingock.cli.executor.command.IssueCommand;
 import io.flamingock.cli.executor.handler.ExecutorExceptionHandler;
 import io.flamingock.cli.executor.util.VersionProvider;
@@ -45,6 +46,7 @@ import java.util.Optional;
                 "",
                 "@|bold Examples:|@",
                 "  flamingock execute apply --jar ./app.jar",
+                "  flamingock install-skills",
                 "  flamingock audit list --jar ./app.jar",
                 "  flamingock audit fix --jar ./app.jar -c my-change-id -r APPLIED",
                 "  flamingock issue list --jar ./app.jar",
@@ -59,7 +61,7 @@ import java.util.Optional;
                 "",
                 "For detailed help on any command, use: flamingock <command> --help"
         },
-        subcommands = {ExecuteCommand.class, AuditCommand.class, IssueCommand.class},
+        subcommands = {ExecuteCommand.class, AuditCommand.class, IssueCommand.class, InstallSkillsCommand.class},
         mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class
 )
