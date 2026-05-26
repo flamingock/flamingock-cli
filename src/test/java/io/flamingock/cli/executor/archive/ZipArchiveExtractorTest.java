@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.archive;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -25,25 +25,30 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SkillsArchiveExtractorTest {
+class ZipArchiveExtractorTest {
 
     @TempDir
     Path tempDir;
 
-    private final SkillsArchiveExtractor extractor = new SkillsArchiveExtractor();
+    private final ZipArchiveExtractor extractor = new ZipArchiveExtractor();
 
     @Test
-    void extractSnapshotRoot_returnsArchiveRootDirectory() throws Exception {
+    void extractSingleRootDirectory_returnsArchiveRootDirectory() throws Exception {
         Path archive = createZip(tempDir.resolve("skills.zip"),
                 "flamingock-skills-master/README.md",
                 "flamingock-skills-master/flamingock-core/SKILL.md",
                 "flamingock-skills-master/flamingock-java/SKILL.md");
 
-        Path snapshotRoot = extractor.extractSnapshotRoot(archive, tempDir.resolve("workspace"));
+        Path snapshotRoot = extractor.extractSingleRootDirectory(
+                archive,
+                tempDir.resolve("workspace"),
+                "extracted",
+                "skills archive"
+        );
 
         assertEquals(tempDir.resolve("workspace").resolve("extracted").resolve("flamingock-skills-master"), snapshotRoot);
         assertTrue(Files.exists(snapshotRoot.resolve("README.md")));
@@ -51,25 +56,25 @@ class SkillsArchiveExtractorTest {
     }
 
     @Test
-    void extractSnapshotRoot_rejectsArchiveWithoutSingleRootDirectory() throws Exception {
+    void extractSingleRootDirectory_rejectsArchiveWithoutSingleRootDirectory() throws Exception {
         Path archive = createZip(tempDir.resolve("invalid.zip"),
                 "README.md",
                 "flamingock-core/SKILL.md");
 
         IllegalStateException exception = org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
-                () -> extractor.extractSnapshotRoot(archive, tempDir.resolve("workspace")));
+                () -> extractor.extractSingleRootDirectory(archive, tempDir.resolve("workspace"), "extracted", "skills archive"));
 
         assertTrue(exception.getMessage().contains("single root directory"));
     }
 
     @Test
-    void extractSnapshotRoot_rejectsZipSlipEntriesOutsideWorkspace() throws Exception {
+    void extractSingleRootDirectory_rejectsZipSlipEntriesOutsideWorkspace() throws Exception {
         Path archive = createZip(tempDir.resolve("zip-slip.zip"),
                 "flamingock-skills-master/flamingock-core/SKILL.md",
                 "flamingock-skills-master/../../evil.txt");
 
         IllegalStateException exception = org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
-                () -> extractor.extractSnapshotRoot(archive, tempDir.resolve("workspace")));
+                () -> extractor.extractSingleRootDirectory(archive, tempDir.resolve("workspace"), "extracted", "skills archive"));
 
         assertTrue(exception.getMessage().contains("unsafe"));
         assertFalse(Files.exists(tempDir.resolve("evil.txt")));

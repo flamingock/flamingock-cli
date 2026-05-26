@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.filesystem;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,23 +24,25 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class SkillArchiveEnumeratorTest {
+class DirectoryListerTest {
 
     @TempDir
     Path tempDir;
 
-    private final SkillArchiveEnumerator enumerator = new SkillArchiveEnumerator();
+    private final DirectoryLister directoryLister = new DirectoryLister();
 
     @Test
-    void listSkillDirectories_returnsOnlyTopLevelFlamingockDirectories() throws Exception {
+    void listDirectories_returnsOnlyTopLevelMatchingDirectories() throws Exception {
         Path snapshotRoot = tempDir.resolve("flamingock-skills-master");
         Files.createDirectories(snapshotRoot.resolve("flamingock-core"));
         Files.createDirectories(snapshotRoot.resolve("flamingock-java"));
         Files.createDirectories(snapshotRoot.resolve("docs"));
         Files.writeString(snapshotRoot.resolve("README.md"), "readme");
-        Files.writeString(snapshotRoot.resolve(".gitignore"), "*");
 
-        List<Path> skillDirectories = enumerator.listSkillDirectories(snapshotRoot);
+        List<Path> skillDirectories = directoryLister.listDirectories(
+                snapshotRoot,
+                path -> path.getFileName().toString().startsWith("flamingock-")
+        );
 
         assertEquals(List.of(
                 snapshotRoot.resolve("flamingock-core"),
@@ -49,12 +51,15 @@ class SkillArchiveEnumeratorTest {
     }
 
     @Test
-    void listSkillDirectories_ignoresNestedFlamingockDirectoriesOutsideTopLevel() throws Exception {
+    void listDirectories_ignoresNestedMatchingDirectoriesOutsideTopLevel() throws Exception {
         Path snapshotRoot = tempDir.resolve("flamingock-skills-master");
         Files.createDirectories(snapshotRoot.resolve("docs").resolve("flamingock-not-a-skill"));
         Files.createDirectories(snapshotRoot.resolve("flamingock-core"));
 
-        List<Path> skillDirectories = enumerator.listSkillDirectories(snapshotRoot);
+        List<Path> skillDirectories = directoryLister.listDirectories(
+                snapshotRoot,
+                path -> path.getFileName().toString().startsWith("flamingock-")
+        );
 
         assertEquals(List.of(snapshotRoot.resolve("flamingock-core")), skillDirectories);
     }

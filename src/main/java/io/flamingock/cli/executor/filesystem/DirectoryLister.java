@@ -13,32 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.filesystem;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * Enumerates official skill directories from an extracted archive snapshot.
+ * Lists directories under a root using a caller-provided filter.
  */
-public class SkillArchiveEnumerator {
+public class DirectoryLister {
 
     /**
-     * Lists top-level skill directories whose names start with {@code flamingock-}.
+     * Lists top-level directories matching the supplied filter.
      *
-     * @param snapshotRoot extracted archive root
-     * @return sorted list of skill directories
-     * @throws IOException if directory listing fails
+     * @param root root directory to inspect
+     * @param filter filter applied to each top-level directory
+     * @return sorted matching directories
+     * @throws IOException if listing fails
      */
-    public List<Path> listSkillDirectories(Path snapshotRoot) throws IOException {
-        try (Stream<Path> children = Files.list(snapshotRoot)) {
+    public List<Path> listDirectories(Path root, Predicate<Path> filter) throws IOException {
+        try (Stream<Path> children = Files.list(root)) {
             return children
                     .filter(Files::isDirectory)
-                    .filter(path -> path.getFileName().toString().startsWith("flamingock-"))
+                    .filter(filter)
                     .sorted(Comparator.comparing(path -> path.getFileName().toString()))
                     .toList();
         }

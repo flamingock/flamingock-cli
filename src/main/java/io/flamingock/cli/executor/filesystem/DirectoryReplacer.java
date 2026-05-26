@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.filesystem;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,26 +23,25 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 /**
- * Replaces one installed skill directory with a fresh copy from the archive.
+ * Replaces a destination directory with a fresh copy from a source directory.
  */
-public class SkillDirectoryReplacer {
+public class DirectoryReplacer {
 
     /**
-     * Deletes the existing destination skill tree and copies the new one in its place.
+     * Deletes the existing destination tree and copies the source tree in its place.
      *
-     * @param sourceSkillDir source skill directory from the extracted archive
-     * @param destinationSkillsDir destination root containing installed skills
+     * @param sourceDirectory source directory
+     * @param destinationDirectory destination directory to replace
      * @throws IOException if replacement fails
      */
-    public void replaceSkill(Path sourceSkillDir, Path destinationSkillsDir) throws IOException {
-        Path destinationSkillDir = destinationSkillsDir.resolve(sourceSkillDir.getFileName().toString());
-        SkillsFileUtils.deleteRecursively(destinationSkillDir);
-        Files.createDirectories(destinationSkillDir);
+    public void replaceDirectory(Path sourceDirectory, Path destinationDirectory) throws IOException {
+        FileSystemUtils.deleteRecursively(destinationDirectory);
+        Files.createDirectories(destinationDirectory);
 
-        try (Stream<Path> sourceTree = Files.walk(sourceSkillDir)) {
+        try (Stream<Path> sourceTree = Files.walk(sourceDirectory)) {
             for (Path sourcePath : sourceTree.sorted(Comparator.naturalOrder()).toList()) {
-                Path relative = sourceSkillDir.relativize(sourcePath);
-                Path target = destinationSkillDir.resolve(relative.toString());
+                Path relative = sourceDirectory.relativize(sourcePath);
+                Path target = destinationDirectory.resolve(relative.toString());
                 if (Files.isDirectory(sourcePath)) {
                     Files.createDirectories(target);
                 } else {

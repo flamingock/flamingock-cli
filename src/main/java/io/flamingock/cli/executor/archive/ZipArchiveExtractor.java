@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,20 +26,23 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * Extracts the official skills ZIP archive into a temporary workspace.
+ * Extracts ZIP archives into a workspace and returns their single root directory.
  */
-public class SkillsArchiveExtractor {
+public class ZipArchiveExtractor {
 
     /**
-     * Extracts the ZIP archive and returns the repository snapshot root directory.
+     * Extracts a ZIP archive and returns the extracted single root directory.
      *
      * @param archive downloaded ZIP archive
      * @param workspace temporary workspace directory
-     * @return extracted snapshot root directory
+     * @param extractionDirectoryName extraction folder name within the workspace
+     * @param archiveDescription archive label for validation messages
+     * @return extracted root directory
      * @throws IOException if extraction fails
      */
-    public Path extractSnapshotRoot(Path archive, Path workspace) throws IOException {
-        Path extractionDir = workspace.resolve("extracted");
+    public Path extractSingleRootDirectory(Path archive, Path workspace, String extractionDirectoryName, String archiveDescription)
+            throws IOException {
+        Path extractionDir = workspace.resolve(extractionDirectoryName);
         Files.createDirectories(extractionDir);
 
         Set<String> rootDirectories = new LinkedHashSet<>();
@@ -48,10 +51,10 @@ public class SkillsArchiveExtractor {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (entry.isDirectory()) {
-                    Path targetDir = safeResolve(extractionDir, entry.getName());
+                    Path targetDir = safeResolve(extractionDir, entry.getName(), archiveDescription);
                     Files.createDirectories(targetDir);
                 } else {
-                    Path targetFile = safeResolve(extractionDir, entry.getName());
+                    Path targetFile = safeResolve(extractionDir, entry.getName(), archiveDescription);
                     Path parent = targetFile.getParent();
                     if (parent != null) {
                         Files.createDirectories(parent);
@@ -64,7 +67,7 @@ public class SkillsArchiveExtractor {
         }
 
         if (rootDirectories.size() != 1 || rootDirectories.contains("")) {
-            throw new IllegalStateException("Expected skills archive to contain a single root directory.");
+            throw new IllegalStateException("Expected " + archiveDescription + " to contain a single root directory.");
         }
 
         return extractionDir.resolve(rootDirectories.iterator().next());
@@ -75,10 +78,10 @@ public class SkillsArchiveExtractor {
         return separatorIndex >= 0 ? entryName.substring(0, separatorIndex) : "";
     }
 
-    private Path safeResolve(Path extractionDir, String entryName) {
+    private Path safeResolve(Path extractionDir, String entryName, String archiveDescription) {
         Path target = extractionDir.resolve(entryName).normalize();
         if (!target.startsWith(extractionDir)) {
-            throw new IllegalStateException("Skills archive contains unsafe entry: " + entryName);
+            throw new IllegalStateException(archiveDescription + " contains unsafe entry: " + entryName);
         }
         return target;
     }

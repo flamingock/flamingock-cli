@@ -16,15 +16,15 @@
 package io.flamingock.cli.executor.command;
 
 import io.flamingock.cli.executor.output.ConsoleFormatter;
-import io.flamingock.cli.executor.skills.InstallDestinationResolver;
-import io.flamingock.cli.executor.skills.InstallMode;
-import io.flamingock.cli.executor.skills.InstallModeResolver;
+import io.flamingock.cli.executor.skills.InstallationTarget;
 import io.flamingock.cli.executor.skills.SkillsInstallationPipeline;
 import io.flamingock.cli.executor.skills.SkillsInstallationResult;
+import io.flamingock.cli.executor.skills.SkillsInstallationTargetResolver;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -37,14 +37,10 @@ import java.util.concurrent.Callable;
 )
 public class InstallSkillsCommand implements Callable<Integer> {
 
-    private static final String GLOBAL_MODE_NOT_IMPLEMENTED =
-            "Global skills installation is not implemented yet. Run 'flamingock install-skills' to install into ./.agents/skills.";
-
     @Option(names = {"-g", "--global"}, description = "Install skills globally (not implemented yet)")
     private boolean global;
 
-    private final InstallModeResolver modeResolver;
-    private final InstallDestinationResolver destinationResolver;
+    private final SkillsInstallationTargetResolver targetResolver;
     private final SkillsInstallationPipeline pipeline;
     private final Path workingDirectory;
 
@@ -52,17 +48,15 @@ public class InstallSkillsCommand implements Callable<Integer> {
      * Creates a command with the default production collaborators.
      */
     public InstallSkillsCommand() {
-        this(new InstallModeResolver(), new InstallDestinationResolver(), new SkillsInstallationPipeline(), Path.of(""));
+        this(new SkillsInstallationTargetResolver(), new SkillsInstallationPipeline(), Path.of(""));
     }
 
     InstallSkillsCommand(
-            InstallModeResolver modeResolver,
-            InstallDestinationResolver destinationResolver,
+            SkillsInstallationTargetResolver targetResolver,
             SkillsInstallationPipeline pipeline,
             Path workingDirectory
     ) {
-        this.modeResolver = modeResolver;
-        this.destinationResolver = destinationResolver;
+        this.targetResolver = targetResolver;
         this.pipeline = pipeline;
         this.workingDirectory = workingDirectory;
     }
@@ -74,21 +68,24 @@ public class InstallSkillsCommand implements Callable<Integer> {
      */
     @Override
     public Integer call() {
-        InstallMode mode = modeResolver.resolve(global);
-        if (mode == InstallMode.GLOBAL) {
-            ConsoleFormatter.printError(GLOBAL_MODE_NOT_IMPLEMENTED);
-            return 1;
-        }
-
         try {
-            Path destination = destinationResolver.resolveLocal(workingDirectory.toAbsolutePath().normalize());
-            SkillsInstallationResult result = pipeline.install(destination);
-            ConsoleFormatter.printInfo("Installed " + result.installedSkills().size()
-                    + " Flamingock skill(s) into " + result.destinationSkillsDir());
+            List<InstallationTarget> targets = targetResolver.resolveTargets(workingDirectory.toAbsolutePath().normalize(), global);
+            SkillsInstallationResult result = pipeline.install(targets);
+            ConsoleFormatter.printInfo(buildSuccessMessage(result));
             return 0;
         } catch (IllegalStateException e) {
             ConsoleFormatter.printError(e.getMessage());
             return 1;
         }
+    }
+
+    private String buildSuccessMessage(SkillsInstallationResult result) {
+        if (result.targets().size() == 1) {
+            return "Installed " + result.installedSkills().size()
+                    + " Flamingock skill(s) into " + result.destinationSkillsDir();
+        }
+
+        return "Installed " + result.installedSkills().size() + " Flamingock skill(s) into "
+                + result.targets().size() + " destinations.";
     }
 }

@@ -13,29 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.filesystem;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.stream.Stream;
 
-final class SkillsFileUtils {
+/**
+ * Creates temporary directories with caller-provided naming and purpose context.
+ */
+public final class TemporaryDirectoryFactory {
 
-    private SkillsFileUtils() {
+    private TemporaryDirectoryFactory() {
     }
 
-    static void deleteRecursively(Path path) {
-        if (path == null || !Files.exists(path)) {
-            return;
-        }
-        try (Stream<Path> tree = Files.walk(path)) {
-            for (Path current : tree.sorted(Comparator.reverseOrder()).toList()) {
-                Files.deleteIfExists(current);
-            }
+    public static Path create(String prefix, String purposeDescription) {
+        try {
+            return Files.createTempDirectory(prefix);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to clean temporary path '" + path + "'.", e);
+            throw new IllegalStateException("Unable to create temporary workspace for " + purposeDescription + ".", e);
         }
     }
 }

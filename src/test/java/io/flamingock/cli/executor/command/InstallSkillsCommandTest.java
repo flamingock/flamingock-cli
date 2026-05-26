@@ -16,11 +16,10 @@
 package io.flamingock.cli.executor.command;
 
 import io.flamingock.cli.executor.FlamingockExecutorCli;
-import io.flamingock.cli.executor.skills.InstallDestinationResolver;
-import io.flamingock.cli.executor.skills.InstallMode;
-import io.flamingock.cli.executor.skills.InstallModeResolver;
+import io.flamingock.cli.executor.skills.InstallationTarget;
 import io.flamingock.cli.executor.skills.SkillsInstallationPipeline;
 import io.flamingock.cli.executor.skills.SkillsInstallationResult;
+import io.flamingock.cli.executor.skills.SkillsInstallationTargetResolver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
@@ -50,29 +49,30 @@ class InstallSkillsCommandTest {
 
     @Test
     void call_localInvocationInstallsSkillsIntoResolvedDestination() throws Exception {
-        RecordingModeResolver modeResolver = new RecordingModeResolver(InstallMode.LOCAL);
-        RecordingDestinationResolver destinationResolver = new RecordingDestinationResolver(tempDir.resolve(".agents/skills"));
+        InstallationTarget resolvedTarget = InstallationTarget.local(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
-                destinationResolver.destination,
+                List.of(resolvedTarget),
                 List.of("flamingock-core", "flamingock-java")
         ));
-        InstallSkillsCommand command = new InstallSkillsCommand(modeResolver, destinationResolver, pipeline, tempDir);
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
 
         int exitCode = new CommandLine(command).execute();
 
         assertEquals(0, exitCode);
-        assertTrue(modeResolver.called);
-        assertFalse(modeResolver.globalRequested);
-        assertEquals(tempDir, destinationResolver.workingDirectory);
-        assertEquals(destinationResolver.destination, pipeline.destination);
+        assertTrue(targetResolver.called);
+        assertFalse(targetResolver.global);
+        assertEquals(tempDir, targetResolver.workingDirectory);
+        assertEquals(List.of(resolvedTarget), pipeline.targets);
     }
 
     @Test
     void call_globalFlagPrintsNotImplementedAndDoesNotTouchFilesystem() throws Exception {
-        RecordingModeResolver modeResolver = new RecordingModeResolver(InstallMode.GLOBAL);
-        RecordingDestinationResolver destinationResolver = new RecordingDestinationResolver(tempDir.resolve(".agents/skills"));
-        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(tempDir, List.of()));
-        InstallSkillsCommand command = new InstallSkillsCommand(modeResolver, destinationResolver, pipeline, tempDir);
+        FailingTargetResolver targetResolver = new FailingTargetResolver(
+                new IllegalStateException("Global skills installation is not implemented yet. Run 'flamingock install-skills' to install into ./.agents/skills.")
+        );
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(List.of(), List.of()));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
 
         ByteArrayOutputStream errContent = new ByteArrayOutputStream();
         PrintStream originalErr = System.err;
@@ -85,9 +85,8 @@ class InstallSkillsCommandTest {
             System.setErr(originalErr);
         }
 
-        assertTrue(modeResolver.called);
-        assertTrue(modeResolver.globalRequested);
-        assertFalse(destinationResolver.called);
+        assertTrue(targetResolver.called);
+        assertTrue(targetResolver.global);
         assertFalse(pipeline.called);
         assertFalse(Files.exists(tempDir.resolve(".agents")));
         assertTrue(errContent.toString(StandardCharsets.UTF_8).contains("not implemented"));
@@ -95,13 +94,13 @@ class InstallSkillsCommandTest {
 
     @Test
     void call_localInvocationUsesSharedPipelineAndPrintsInstalledSkillCount() throws Exception {
-        RecordingModeResolver modeResolver = new RecordingModeResolver(InstallMode.LOCAL);
-        RecordingDestinationResolver destinationResolver = new RecordingDestinationResolver(tempDir.resolve(".agents/skills"));
+        InstallationTarget resolvedTarget = InstallationTarget.local(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
-                destinationResolver.destination,
+                List.of(resolvedTarget),
                 List.of("flamingock-core")
         ));
-        InstallSkillsCommand command = new InstallSkillsCommand(modeResolver, destinationResolver, pipeline, tempDir);
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         PrintStream originalOut = System.out;
@@ -120,12 +119,12 @@ class InstallSkillsCommandTest {
 
     @Test
     void call_localInvocationPrintsActionableFailureWithoutStackTraceAndReturnsExitCodeOne() throws Exception {
-        RecordingModeResolver modeResolver = new RecordingModeResolver(InstallMode.LOCAL);
-        RecordingDestinationResolver destinationResolver = new RecordingDestinationResolver(tempDir.resolve(".agents/skills"));
+        InstallationTarget resolvedTarget = InstallationTarget.local(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         FailingPipeline pipeline = new FailingPipeline(
                 new IllegalStateException("Download timed out while fetching official Flamingock skills. Check your network connection and retry.")
         );
-        InstallSkillsCommand command = new InstallSkillsCommand(modeResolver, destinationResolver, pipeline, tempDir);
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
 
         ByteArrayOutputStream errContent = new ByteArrayOutputStream();
         PrintStream originalErr = System.err;
@@ -139,8 +138,7 @@ class InstallSkillsCommandTest {
         }
 
         String stderr = errContent.toString(StandardCharsets.UTF_8);
-        assertTrue(modeResolver.called);
-        assertTrue(destinationResolver.called);
+        assertTrue(targetResolver.called);
         assertTrue(pipeline.called);
         assertTrue(stderr.contains("timed out"));
         assertTrue(stderr.contains("retry"));
@@ -148,39 +146,41 @@ class InstallSkillsCommandTest {
         assertFalse(stderr.contains("\tat "));
     }
 
-    private static final class RecordingModeResolver extends InstallModeResolver {
+    private static final class RecordingTargetResolver extends SkillsInstallationTargetResolver {
 
-        private final InstallMode resolvedMode;
+        private final List<InstallationTarget> targets;
         private boolean called;
-        private boolean globalRequested;
+        private Path workingDirectory;
+        private boolean global;
 
-        private RecordingModeResolver(InstallMode resolvedMode) {
-            this.resolvedMode = resolvedMode;
+        private RecordingTargetResolver(List<InstallationTarget> targets) {
+            this.targets = targets;
         }
 
         @Override
-        public InstallMode resolve(boolean globalRequested) {
+        public List<InstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
             this.called = true;
-            this.globalRequested = globalRequested;
-            return resolvedMode;
+            this.workingDirectory = workingDirectory;
+            this.global = global;
+            return targets;
         }
     }
 
-    private static final class RecordingDestinationResolver extends InstallDestinationResolver {
+    private static final class FailingTargetResolver extends SkillsInstallationTargetResolver {
 
-        private final Path destination;
+        private final IllegalStateException failure;
         private boolean called;
-        private Path workingDirectory;
+        private boolean global;
 
-        private RecordingDestinationResolver(Path destination) {
-            this.destination = destination;
+        private FailingTargetResolver(IllegalStateException failure) {
+            this.failure = failure;
         }
 
         @Override
-        public Path resolveLocal(Path workingDirectory) {
+        public List<InstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
             this.called = true;
-            this.workingDirectory = workingDirectory;
-            return destination;
+            this.global = global;
+            throw failure;
         }
     }
 
@@ -188,16 +188,16 @@ class InstallSkillsCommandTest {
 
         private final SkillsInstallationResult result;
         private boolean called;
-        private Path destination;
+        private List<InstallationTarget> targets;
 
         private RecordingPipeline(SkillsInstallationResult result) {
             this.result = result;
         }
 
         @Override
-        public SkillsInstallationResult install(Path destinationSkillsDir) {
+        public SkillsInstallationResult install(List<InstallationTarget> targets) {
             this.called = true;
-            this.destination = destinationSkillsDir;
+            this.targets = targets;
             return result;
         }
     }
@@ -212,7 +212,7 @@ class InstallSkillsCommandTest {
         }
 
         @Override
-        public SkillsInstallationResult install(Path destinationSkillsDir) {
+        public SkillsInstallationResult install(List<InstallationTarget> targets) {
             this.called = true;
             throw failure;
         }

@@ -21,8 +21,26 @@ import java.util.List;
 /**
  * Summary of a completed skills installation.
  *
- * @param destinationSkillsDir destination directory that received the installed skills
+ * @param targets installation targets that received the installed skills
  * @param installedSkills installed official skill folder names
  */
-public record SkillsInstallationResult(Path destinationSkillsDir, List<String> installedSkills) {
+public record SkillsInstallationResult(List<InstallationTarget> targets, List<String> installedSkills) {
+
+    public SkillsInstallationResult {
+        targets = List.copyOf(targets);
+        installedSkills = List.copyOf(installedSkills);
+    }
+
+    /**
+     * Returns the single destination directory when the installation resolved to one target.
+     *
+     * @return single destination directory
+     */
+    public Path destinationSkillsDir() {
+        if (targets.size() != 1) {
+            throw new IllegalStateException("Installation resolved to " + targets.size()
+                    + " targets; destinationSkillsDir() is only available for single-target installs.");
+        }
+        return targets.get(0).destinationSkillsDir();
+    }
 }

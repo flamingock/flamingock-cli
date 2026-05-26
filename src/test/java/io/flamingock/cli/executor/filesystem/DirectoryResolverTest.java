@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.skills;
+package io.flamingock.cli.executor.filesystem;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -25,16 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class InstallDestinationResolverTest {
+class DirectoryResolverTest {
 
     @TempDir
     Path tempDir;
 
-    private final InstallDestinationResolver resolver = new InstallDestinationResolver();
+    private final DirectoryResolver resolver = new DirectoryResolver();
 
     @Test
-    void resolveLocal_createsMissingAgentsSkillsTree() throws Exception {
-        Path destination = resolver.resolveLocal(tempDir);
+    void resolveDirectory_createsMissingNestedTree() throws Exception {
+        Path destination = resolver.resolveDirectory(tempDir, ".agents", "skills");
 
         assertEquals(tempDir.resolve(".agents").resolve("skills"), destination);
         assertTrue(Files.isDirectory(tempDir.resolve(".agents")));
@@ -42,23 +42,23 @@ class InstallDestinationResolverTest {
     }
 
     @Test
-    void resolveLocal_failsWhenAgentsPathIsAFile() throws Exception {
+    void resolveDirectory_failsWhenIntermediatePathIsAFile() throws Exception {
         Path agentsFile = Files.writeString(tempDir.resolve(".agents"), "not a directory");
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> resolver.resolveLocal(tempDir));
+                () -> resolver.resolveDirectory(tempDir, ".agents", "skills"));
 
         assertTrue(exception.getMessage().contains(agentsFile.toString()));
         assertTrue(exception.getMessage().contains("Delete or rename"));
     }
 
     @Test
-    void resolveLocal_failsWhenSkillsPathIsAFile() throws Exception {
+    void resolveDirectory_failsWhenFinalPathIsAFile() throws Exception {
         Files.createDirectories(tempDir.resolve(".agents"));
         Path skillsFile = Files.writeString(tempDir.resolve(".agents").resolve("skills"), "not a directory");
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> resolver.resolveLocal(tempDir));
+                () -> resolver.resolveDirectory(tempDir, ".agents", "skills"));
 
         assertTrue(exception.getMessage().contains(skillsFile.toString()));
         assertTrue(exception.getMessage().contains("Delete or rename"));

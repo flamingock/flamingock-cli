@@ -15,10 +15,20 @@
  */
 package io.flamingock.cli.executor.skills;
 
+import io.flamingock.cli.executor.archive.ZipArchiveExtractor;
+import io.flamingock.cli.executor.filesystem.DirectoryLister;
+import io.flamingock.cli.executor.filesystem.DirectoryReplacer;
+import io.flamingock.cli.executor.filesystem.FileSystemUtils;
+import io.flamingock.cli.executor.filesystem.TemporaryDirectoryFactory;
+import io.flamingock.cli.executor.http.HttpFileDownloader;
+
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -26,33 +36,43 @@ import java.util.function.Supplier;
  */
 public class SkillsInstallationPipeline {
 
-    private final DownloadStage downloader;
-    private final ArchiveExtractor extractor;
-    private final ArchiveEnumerator enumerator;
+    private static final URI OFFICIAL_SKILLS_ARCHIVE_URI =
+            URI.create("https://github.com/flamingock/flamingock-skills/archive/refs/heads/release.zip");
+    private static final String ARCHIVE_FILE_NAME = "flamingock-skills.zip";
+    private static final String EXTRACTION_DIRECTORY_NAME = "extracted";
+    private static final String SKILL_DIRECTORY_PREFIX = "flamingock-";
+    private static final String TEMP_DIRECTORY_PREFIX = "flamingock-skills-";
+    private static final String DOWNLOAD_LABEL = "official Flamingock skills";
+    private static final String ARCHIVE_DESCRIPTION = "skills archive";
+    private static final String USER_AGENT = "Flamingock CLI/1.0 install-skills";
+
+    private final HttpFileDownloader downloader;
+    private final ZipArchiveExtractor extractor;
+    private final DirectoryLister directoryLister;
     private final DirectoryReplacer replacer;
     private final Supplier<Path> workspaceSupplier;
-    private final CleanupStage cleanup;
+    private final Consumer<Path> cleanup;
 
     public SkillsInstallationPipeline() {
-        this(new SkillsArchiveDownloader()::downloadTo,
-                new SkillsArchiveExtractor()::extractSnapshotRoot,
-                new SkillArchiveEnumerator()::listSkillDirectories,
-                new SkillDirectoryReplacer()::replaceSkill,
-                TemporaryWorkspaceSupplier::create,
-                SkillsFileUtils::deleteRecursively);
+        this(new HttpFileDownloader(),
+                new ZipArchiveExtractor(),
+                new DirectoryLister(),
+                new DirectoryReplacer(),
+                () -> TemporaryDirectoryFactory.create(TEMP_DIRECTORY_PREFIX, "skill installation"),
+                FileSystemUtils::deleteRecursively);
     }
 
     SkillsInstallationPipeline(
-            DownloadStage downloader,
-            ArchiveExtractor extractor,
-            ArchiveEnumerator enumerator,
+            HttpFileDownloader downloader,
+            ZipArchiveExtractor extractor,
+            DirectoryLister directoryLister,
             DirectoryReplacer replacer,
             Supplier<Path> workspaceSupplier,
-            CleanupStage cleanup
+            Consumer<Path> cleanup
     ) {
         this.downloader = downloader;
         this.extractor = extractor;
-        this.enumerator = enumerator;
+        this.directoryLister = directoryLister;
         this.replacer = replacer;
         this.workspaceSupplier = workspaceSupplier;
         this.cleanup = cleanup;
@@ -61,73 +81,58 @@ public class SkillsInstallationPipeline {
     /**
      * Runs the download, extract, enumerate, replace, and cleanup stages.
      *
-     * @param destinationSkillsDir destination skills directory
+     * @param targets resolved installation targets
      * @return installation result summary
      */
-    public SkillsInstallationResult install(Path destinationSkillsDir) {
+    public SkillsInstallationResult install(List<InstallationTarget> targets) {
+        Objects.requireNonNull(targets, "targets must not be null");
+        if (targets.isEmpty()) {
+            throw new IllegalStateException("No skills installation targets were resolved. Choose a destination and retry.");
+        }
+
         Path workspace = workspaceSupplier.get();
         RuntimeException installationFailure = null;
         try {
-            Path archive = downloader.downloadTo(workspace);
-            Path snapshotRoot = extractor.extractSnapshotRoot(archive, workspace);
-            List<Path> skillDirectories = enumerator.listSkillDirectories(snapshotRoot);
+            Path archive = downloader.downloadTo(
+                    workspace,
+                    OFFICIAL_SKILLS_ARCHIVE_URI,
+                    ARCHIVE_FILE_NAME,
+                    USER_AGENT,
+                    DOWNLOAD_LABEL
+            );
+            Path snapshotRoot = extractor.extractSingleRootDirectory(
+                    archive,
+                    workspace,
+                    EXTRACTION_DIRECTORY_NAME,
+                    ARCHIVE_DESCRIPTION
+            );
+            List<Path> skillDirectories = directoryLister.listDirectories(
+                    snapshotRoot,
+                    path -> path.getFileName().toString().startsWith(SKILL_DIRECTORY_PREFIX)
+            );
             List<String> installedSkills = new ArrayList<>();
             for (Path skillDirectory : skillDirectories) {
-                replacer.replaceSkill(skillDirectory, destinationSkillsDir);
                 installedSkills.add(skillDirectory.getFileName().toString());
             }
-            return new SkillsInstallationResult(destinationSkillsDir, List.copyOf(installedSkills));
+            for (InstallationTarget target : targets) {
+                for (Path skillDirectory : skillDirectories) {
+                    Path destinationSkillDirectory = target.destinationSkillsDir().resolve(skillDirectory.getFileName().toString());
+                    replacer.replaceDirectory(skillDirectory, destinationSkillDirectory);
+                }
+            }
+            return new SkillsInstallationResult(targets, installedSkills);
         } catch (IOException e) {
             installationFailure = new IllegalStateException("Failed to install Flamingock skills: " + e.getMessage(), e);
             throw installationFailure;
         } finally {
             try {
-                cleanup.delete(workspace);
+                cleanup.accept(workspace);
             } catch (RuntimeException cleanupFailure) {
                 if (installationFailure != null) {
                     installationFailure.addSuppressed(cleanupFailure);
                 } else {
                     throw cleanupFailure;
                 }
-            }
-        }
-    }
-
-    @FunctionalInterface
-    interface ArchiveExtractor {
-        Path extractSnapshotRoot(Path archive, Path workspace) throws IOException;
-    }
-
-    @FunctionalInterface
-    interface DownloadStage {
-        Path downloadTo(Path workspace) throws IOException;
-    }
-
-    @FunctionalInterface
-    interface ArchiveEnumerator {
-        List<Path> listSkillDirectories(Path snapshotRoot) throws IOException;
-    }
-
-    @FunctionalInterface
-    interface DirectoryReplacer {
-        void replaceSkill(Path sourceSkillDir, Path destinationSkillsDir) throws IOException;
-    }
-
-    @FunctionalInterface
-    interface CleanupStage {
-        void delete(Path workspace);
-    }
-
-    private static final class TemporaryWorkspaceSupplier {
-
-        private TemporaryWorkspaceSupplier() {
-        }
-
-        private static Path create() {
-            try {
-                return java.nio.file.Files.createTempDirectory("flamingock-skills-");
-            } catch (IOException e) {
-                throw new IllegalStateException("Unable to create temporary workspace for skill installation.", e);
             }
         }
     }
