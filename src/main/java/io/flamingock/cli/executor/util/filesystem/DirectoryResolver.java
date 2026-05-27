@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.filesystem;
+package io.flamingock.cli.executor.util.filesystem;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -24,9 +24,9 @@ import java.util.Objects;
  * @param identifier stable identifier for the target
  * @param destinationSkillsDir destination directory that will receive the skills
  */
-public record InstallationTarget(String identifier, Path destinationSkillsDir) {
+public record SkillsInstallationTarget(String identifier, Path destinationSkillsDir) {
 
-    public InstallationTarget {
+    public SkillsInstallationTarget {
         identifier = Objects.requireNonNull(identifier, "identifier must not be null");
         destinationSkillsDir = Objects.requireNonNull(destinationSkillsDir, "destinationSkillsDir must not be null");
     }
@@ -37,7 +37,7 @@ public record InstallationTarget(String identifier, Path destinationSkillsDir) {
      * @param destinationSkillsDir local destination directory
      * @return local installation target
      */
-    public static InstallationTarget local(Path destinationSkillsDir) {
-        return new InstallationTarget("local", destinationSkillsDir);
+    public static SkillsInstallationTarget local(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local", destinationSkillsDir);
     }
 }

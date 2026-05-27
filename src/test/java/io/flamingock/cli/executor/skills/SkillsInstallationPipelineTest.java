@@ -15,11 +15,11 @@
  */
 package io.flamingock.cli.executor.skills;
 
-import io.flamingock.cli.executor.filesystem.DirectoryReplacer;
-import io.flamingock.cli.executor.filesystem.FileSystemUtils;
-import io.flamingock.cli.executor.archive.ZipArchiveExtractor;
-import io.flamingock.cli.executor.filesystem.DirectoryLister;
-import io.flamingock.cli.executor.http.HttpFileDownloader;
+import io.flamingock.cli.executor.util.filesystem.DirectoryReplacer;
+import io.flamingock.cli.executor.util.filesystem.FileSystemUtils;
+import io.flamingock.cli.executor.util.archive.ZipArchiveExtractor;
+import io.flamingock.cli.executor.util.filesystem.DirectoryLister;
+import io.flamingock.cli.executor.util.http.HttpFileDownloader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -44,7 +44,7 @@ class SkillsInstallationPipelineTest {
     void install_runsStagesInOrderAndCleansWorkspace() throws Exception {
         List<String> events = new ArrayList<>();
         Path destination = Files.createDirectories(tempDir.resolve(".agents").resolve("skills"));
-        InstallationTarget target = InstallationTarget.local(destination);
+        SkillsInstallationTarget target = SkillsInstallationTarget.local(destination);
         Path downloadedArchive = tempDir.resolve("downloaded.zip");
         Path snapshotRoot = Files.createDirectories(tempDir.resolve("snapshot"));
         Path firstSkill = Files.createDirectories(snapshotRoot.resolve("flamingock-core"));
@@ -95,7 +95,7 @@ class SkillsInstallationPipelineTest {
 
     @Test
     void install_cleansWorkspaceWhenStageFails() {
-        InstallationTarget target = InstallationTarget.local(tempDir.resolve(".agents").resolve("skills"));
+        SkillsInstallationTarget target = SkillsInstallationTarget.local(tempDir.resolve(".agents").resolve("skills"));
         SkillsInstallationPipeline pipeline = new SkillsInstallationPipeline(
                 new HttpFileDownloader() {
                     @Override
@@ -127,7 +127,7 @@ class SkillsInstallationPipelineTest {
     void install_preservesOriginalFailureWhenCleanupAlsoFails() throws Exception {
         Path workspace = Files.createDirectories(tempDir.resolve("workspace"));
         Files.writeString(workspace.resolve("stubborn.txt"), "keep");
-        InstallationTarget target = InstallationTarget.local(tempDir.resolve(".agents").resolve("skills"));
+        SkillsInstallationTarget target = SkillsInstallationTarget.local(tempDir.resolve(".agents").resolve("skills"));
 
         SkillsInstallationPipeline pipeline = new SkillsInstallationPipeline(
                 new HttpFileDownloader() {
@@ -162,7 +162,7 @@ class SkillsInstallationPipelineTest {
     @Test
     void install_replacesOnlyEnumeratedOfficialSkillsAndPreservesCustomFolders() throws Exception {
         Path destination = Files.createDirectories(tempDir.resolve(".agents").resolve("skills"));
-        InstallationTarget target = InstallationTarget.local(destination);
+        SkillsInstallationTarget target = SkillsInstallationTarget.local(destination);
         Path existingOfficialSkill = Files.createDirectories(destination.resolve("flamingock-core"));
         Files.writeString(existingOfficialSkill.resolve("old.txt"), "old");
         Path customSkill = Files.createDirectories(destination.resolve("my-custom-skill"));
@@ -208,8 +208,8 @@ class SkillsInstallationPipelineTest {
     @Test
     void install_downloadsAndExtractsOnceForMultipleTargets() throws Exception {
         List<String> events = new ArrayList<>();
-        InstallationTarget firstTarget = new InstallationTarget("local", Files.createDirectories(tempDir.resolve("project-a/.agents/skills")));
-        InstallationTarget secondTarget = new InstallationTarget("secondary", Files.createDirectories(tempDir.resolve("project-b/.agents/skills")));
+        SkillsInstallationTarget firstTarget = new SkillsInstallationTarget("local", Files.createDirectories(tempDir.resolve("project-a/.agents/skills")));
+        SkillsInstallationTarget secondTarget = new SkillsInstallationTarget("secondary", Files.createDirectories(tempDir.resolve("project-b/.agents/skills")));
         Path snapshotRoot = Files.createDirectories(tempDir.resolve("snapshot"));
         Path firstSkill = Files.createDirectories(snapshotRoot.resolve("flamingock-core"));
         Path secondSkill = Files.createDirectories(snapshotRoot.resolve("flamingock-java"));

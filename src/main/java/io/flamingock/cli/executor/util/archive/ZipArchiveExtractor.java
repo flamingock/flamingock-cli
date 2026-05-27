@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.flamingock.cli.executor.archive;
+package io.flamingock.cli.executor.util.archive;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -15,7 +15,7 @@
  */
 package io.flamingock.cli.executor.skills;
 
-import io.flamingock.cli.executor.filesystem.DirectoryResolver;
+import io.flamingock.cli.executor.util.filesystem.DirectoryResolver;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -46,12 +46,12 @@ public class SkillsInstallationTargetResolver {
      * @param global whether global mode was requested
      * @return resolved installation targets
      */
-    public List<InstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+    public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
         if (global) {
             throw new IllegalStateException(GLOBAL_MODE_NOT_IMPLEMENTED);
         }
 
         Path destination = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
-        return List.of(InstallationTarget.local(destination));
+        return List.of(SkillsInstallationTarget.local(destination));
     }
 }

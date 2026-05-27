@@ -16,7 +16,7 @@
 package io.flamingock.cli.executor.command;
 
 import io.flamingock.cli.executor.FlamingockExecutorCli;
-import io.flamingock.cli.executor.skills.InstallationTarget;
+import io.flamingock.cli.executor.skills.SkillsInstallationTarget;
 import io.flamingock.cli.executor.skills.SkillsInstallationPipeline;
 import io.flamingock.cli.executor.skills.SkillsInstallationResult;
 import io.flamingock.cli.executor.skills.SkillsInstallationTargetResolver;
@@ -49,7 +49,7 @@ class InstallSkillsCommandTest {
 
     @Test
     void call_localInvocationInstallsSkillsIntoResolvedDestination() throws Exception {
-        InstallationTarget resolvedTarget = InstallationTarget.local(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.local(tempDir.resolve(".agents/skills"));
         RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
                 List.of(resolvedTarget),
@@ -94,7 +94,7 @@ class InstallSkillsCommandTest {
 
     @Test
     void call_localInvocationUsesSharedPipelineAndPrintsInstalledSkillCount() throws Exception {
-        InstallationTarget resolvedTarget = InstallationTarget.local(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.local(tempDir.resolve(".agents/skills"));
         RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
                 List.of(resolvedTarget),
@@ -119,7 +119,7 @@ class InstallSkillsCommandTest {
 
     @Test
     void call_localInvocationPrintsActionableFailureWithoutStackTraceAndReturnsExitCodeOne() throws Exception {
-        InstallationTarget resolvedTarget = InstallationTarget.local(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.local(tempDir.resolve(".agents/skills"));
         RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         FailingPipeline pipeline = new FailingPipeline(
                 new IllegalStateException("Download timed out while fetching official Flamingock skills. Check your network connection and retry.")
@@ -148,17 +148,17 @@ class InstallSkillsCommandTest {
 
     private static final class RecordingTargetResolver extends SkillsInstallationTargetResolver {
 
-        private final List<InstallationTarget> targets;
+        private final List<SkillsInstallationTarget> targets;
         private boolean called;
         private Path workingDirectory;
         private boolean global;
 
-        private RecordingTargetResolver(List<InstallationTarget> targets) {
+        private RecordingTargetResolver(List<SkillsInstallationTarget> targets) {
             this.targets = targets;
         }
 
         @Override
-        public List<InstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+        public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
             this.called = true;
             this.workingDirectory = workingDirectory;
             this.global = global;
@@ -177,7 +177,7 @@ class InstallSkillsCommandTest {
         }
 
         @Override
-        public List<InstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+        public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
             this.called = true;
             this.global = global;
             throw failure;
@@ -188,14 +188,14 @@ class InstallSkillsCommandTest {
 
         private final SkillsInstallationResult result;
         private boolean called;
-        private List<InstallationTarget> targets;
+        private List<SkillsInstallationTarget> targets;
 
         private RecordingPipeline(SkillsInstallationResult result) {
             this.result = result;
         }
 
         @Override
-        public SkillsInstallationResult install(List<InstallationTarget> targets) {
+        public SkillsInstallationResult install(List<SkillsInstallationTarget> targets) {
             this.called = true;
             this.targets = targets;
             return result;
@@ -212,7 +212,7 @@ class InstallSkillsCommandTest {
         }
 
         @Override
-        public SkillsInstallationResult install(List<InstallationTarget> targets) {
+        public SkillsInstallationResult install(List<SkillsInstallationTarget> targets) {
             this.called = true;
             throw failure;
         }

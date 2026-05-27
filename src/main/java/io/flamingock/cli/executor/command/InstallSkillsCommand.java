@@ -16,7 +16,7 @@
 package io.flamingock.cli.executor.command;
 
 import io.flamingock.cli.executor.output.ConsoleFormatter;
-import io.flamingock.cli.executor.skills.InstallationTarget;
+import io.flamingock.cli.executor.skills.SkillsInstallationTarget;
 import io.flamingock.cli.executor.skills.SkillsInstallationPipeline;
 import io.flamingock.cli.executor.skills.SkillsInstallationResult;
 import io.flamingock.cli.executor.skills.SkillsInstallationTargetResolver;
@@ -69,7 +69,7 @@ public class InstallSkillsCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            List<InstallationTarget> targets = targetResolver.resolveTargets(workingDirectory.toAbsolutePath().normalize(), global);
+            List<SkillsInstallationTarget> targets = targetResolver.resolveTargets(workingDirectory.toAbsolutePath().normalize(), global);
             SkillsInstallationResult result = pipeline.install(targets);
             ConsoleFormatter.printInfo(buildSuccessMessage(result));
             return 0;

@@ -24,7 +24,7 @@ import java.util.List;
  * @param targets installation targets that received the installed skills
  * @param installedSkills installed official skill folder names
  */
-public record SkillsInstallationResult(List<InstallationTarget> targets, List<String> installedSkills) {
+public record SkillsInstallationResult(List<SkillsInstallationTarget> targets, List<String> installedSkills) {
 
     public SkillsInstallationResult {
         targets = List.copyOf(targets);

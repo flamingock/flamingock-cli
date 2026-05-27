@@ -15,7 +15,7 @@
  */
 package io.flamingock.cli.executor.skills;
 
-import io.flamingock.cli.executor.filesystem.DirectoryResolver;
+import io.flamingock.cli.executor.util.filesystem.DirectoryResolver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -39,12 +39,12 @@ class SkillsInstallationTargetResolverTest {
         RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
         SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
 
-        List<InstallationTarget> targets = resolver.resolveTargets(tempDir, false);
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false);
 
         assertTrue(directoryResolver.called);
         assertEquals(tempDir, directoryResolver.workingDirectory);
         assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
-        assertEquals(List.of(InstallationTarget.local(tempDir.resolve(".agents/skills"))), targets);
+        assertEquals(List.of(SkillsInstallationTarget.local(tempDir.resolve(".agents/skills"))), targets);
     }
 
     @Test

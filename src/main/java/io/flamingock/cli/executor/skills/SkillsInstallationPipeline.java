@@ -15,12 +15,12 @@
  */
 package io.flamingock.cli.executor.skills;
 
-import io.flamingock.cli.executor.archive.ZipArchiveExtractor;
-import io.flamingock.cli.executor.filesystem.DirectoryLister;
-import io.flamingock.cli.executor.filesystem.DirectoryReplacer;
-import io.flamingock.cli.executor.filesystem.FileSystemUtils;
-import io.flamingock.cli.executor.filesystem.TemporaryDirectoryFactory;
-import io.flamingock.cli.executor.http.HttpFileDownloader;
+import io.flamingock.cli.executor.util.archive.ZipArchiveExtractor;
+import io.flamingock.cli.executor.util.filesystem.DirectoryLister;
+import io.flamingock.cli.executor.util.filesystem.DirectoryReplacer;
+import io.flamingock.cli.executor.util.filesystem.FileSystemUtils;
+import io.flamingock.cli.executor.util.filesystem.TemporaryDirectoryFactory;
+import io.flamingock.cli.executor.util.http.HttpFileDownloader;
 
 import java.io.IOException;
 import java.net.URI;
@@ -84,7 +84,7 @@ public class SkillsInstallationPipeline {
      * @param targets resolved installation targets
      * @return installation result summary
      */
-    public SkillsInstallationResult install(List<InstallationTarget> targets) {
+    public SkillsInstallationResult install(List<SkillsInstallationTarget> targets) {
         Objects.requireNonNull(targets, "targets must not be null");
         if (targets.isEmpty()) {
             throw new IllegalStateException("No skills installation targets were resolved. Choose a destination and retry.");
@@ -114,7 +114,7 @@ public class SkillsInstallationPipeline {
             for (Path skillDirectory : skillDirectories) {
                 installedSkills.add(skillDirectory.getFileName().toString());
             }
-            for (InstallationTarget target : targets) {
+            for (SkillsInstallationTarget target : targets) {
                 for (Path skillDirectory : skillDirectories) {
                     Path destinationSkillDirectory = target.destinationSkillsDir().resolve(skillDirectory.getFileName().toString());
                     replacer.replaceDirectory(skillDirectory, destinationSkillDirectory);
