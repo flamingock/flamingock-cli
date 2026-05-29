@@ -37,10 +37,8 @@ public class HttpFileDownloader {
     private final Duration requestTimeout;
 
     public HttpFileDownloader() {
-        this(DEFAULT_CONNECT_TIMEOUT, DEFAULT_REQUEST_TIMEOUT, (request, target, resolvedConnectTimeout) -> HttpClient.newBuilder()
-                .connectTimeout(resolvedConnectTimeout)
-                .build()
-                .send(request, HttpResponse.BodyHandlers.ofFile(target)));
+        this(DEFAULT_CONNECT_TIMEOUT, DEFAULT_REQUEST_TIMEOUT, (request, target, resolvedConnectTimeout) ->
+                createHttpClient(resolvedConnectTimeout).send(request, HttpResponse.BodyHandlers.ofFile(target)));
     }
 
     HttpFileDownloader(Duration connectTimeout, Duration requestTimeout, DownloadExecutor downloadExecutor) {
@@ -69,15 +67,9 @@ public class HttpFileDownloader {
                 .header("User-Agent", userAgent)
                 .GET()
                 .build();
+        HttpResponse<Path> response;
         try {
-            HttpResponse<Path> response = downloadExecutor.download(request, targetFile, connectTimeout);
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                deletePartialFile(targetFile);
-                throw new IOException("Download failed while fetching " + downloadLabel
-                        + " with HTTP " + response.statusCode() + " from " + sourceUri
-                        + ". Check your network connection and retry.");
-            }
-            return targetFile;
+            response = downloadExecutor.download(request, targetFile, connectTimeout);
         } catch (IOException e) {
             deletePartialFile(targetFile);
             throw new IOException("Download failed while fetching " + downloadLabel
@@ -88,6 +80,21 @@ public class HttpFileDownloader {
             throw new IOException("Download interrupted while fetching " + downloadLabel
                     + ". Retry the command once the interruption is cleared.", e);
         }
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            deletePartialFile(targetFile);
+            throw new IOException("Download failed while fetching " + downloadLabel
+                    + " with HTTP " + response.statusCode() + " from " + sourceUri
+                    + ". Check your network connection and retry.");
+        }
+        return targetFile;
+    }
+
+    static HttpClient createHttpClient(Duration connectTimeout) {
+        return HttpClient.newBuilder()
+                .connectTimeout(connectTimeout)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
     }
 
     private void deletePartialFile(Path targetFile) throws IOException {

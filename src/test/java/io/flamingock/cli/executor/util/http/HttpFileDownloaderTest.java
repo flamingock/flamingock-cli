@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -68,7 +69,16 @@ class HttpFileDownloaderTest {
 
         assertTrue(exception.getMessage().contains(DOWNLOAD_LABEL));
         assertTrue(exception.getMessage().contains("HTTP 503"));
+        assertEquals(1, countOccurrences(exception.getMessage(), "Download failed while fetching"));
         assertFalse(Files.exists(workspace.resolve(TARGET_FILE_NAME)));
+    }
+
+    @Test
+    void createHttpClient_followsStandardRedirects() {
+        HttpClient client = HttpFileDownloader.createHttpClient(Duration.ofSeconds(10));
+
+        assertEquals(HttpClient.Redirect.NORMAL, client.followRedirects());
+        assertEquals(Duration.ofSeconds(10), client.connectTimeout().orElseThrow());
     }
 
     @Test
@@ -135,6 +145,10 @@ class HttpFileDownloaderTest {
             Files.writeString(target, "zip-content");
             return new HttpResponseStub(statusCode, target, request);
         }
+    }
+
+    private static int countOccurrences(String text, String token) {
+        return text.split(java.util.regex.Pattern.quote(token), -1).length - 1;
     }
 
     private record HttpResponseStub(int statusCode, Path body, HttpRequest request) implements HttpResponse<Path> {
