@@ -437,7 +437,7 @@ jobs:
 
       - name: Trigger tap bump via workflow_dispatch
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_WORKFLOW_TOKEN }}
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
           SHA_LINUX="${{ steps.sha256.outputs.sha_linux }}"
