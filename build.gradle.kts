@@ -9,7 +9,7 @@ description = "Flamingock CLI for executing changes in applications"
 
 val jacksonVersion = "2.16.0"
 val picocliVersion = "4.7.5"
-val flamingockVersion = "1.3.0"
+val flamingockVersion = "1.4.0"
 
 repositories {
     mavenLocal()  // For local development with unpublished versions

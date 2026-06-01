@@ -58,9 +58,13 @@ public final class ExecutionResultFormatter {
         sb.append(formatStagesSummary(result));
         sb.append(formatChangesSummary(result));
 
-        // Print error details if failed
-        if (result.isFailed() && result.getError() != null) {
-            sb.append(formatErrorDetails(result.getError()));
+        // Print error details from failed stages
+        if (result.isFailed()) {
+            for (StageResult stage : result.getStages()) {
+                if (stage.isFailed() && stage.getState().getErrorInfo().isPresent()) {
+                    sb.append(formatErrorDetails(stage.getState().getErrorInfo().get()));
+                }
+            }
         }
 
         sb.append(SEPARATOR).append("\n");
@@ -149,8 +153,9 @@ public final class ExecutionResultFormatter {
      * Formats the changes summary line.
      */
     private static String formatChangesSummary(ExecuteResponseData result) {
+        int skipped = result.getAlreadyAppliedChanges() + result.getNotReachedChanges();
         return String.format("  Changes:    %d applied, %d skipped, %d failed%n",
-                result.getAppliedChanges(), result.getSkippedChanges(), result.getFailedChanges());
+                result.getAppliedChanges(), skipped, result.getFailedChanges());
     }
 
     /**
@@ -159,8 +164,8 @@ public final class ExecutionResultFormatter {
     private static String formatErrorDetails(ErrorInfo error) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n  Error:\n");
-        if (error.getChangeId() != null) {
-            sb.append(String.format("    Change:   %s%n", error.getChangeId()));
+        if (error.getChangeIds() != null && !error.getChangeIds().isEmpty()) {
+            sb.append(String.format("    Changes:  %s%n", String.join(", ", error.getChangeIds())));
         }
         if (error.getStageId() != null) {
             sb.append(String.format("    Stage:    %s%n", error.getStageId()));

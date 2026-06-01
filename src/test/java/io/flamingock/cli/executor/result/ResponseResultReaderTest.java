@@ -64,7 +64,8 @@ class ResponseResultReaderTest {
                 "    \"failedStages\": 0,\n" +
                 "    \"totalChanges\": 5,\n" +
                 "    \"appliedChanges\": 3,\n" +
-                "    \"skippedChanges\": 2,\n" +
+                "    \"alreadyAppliedChanges\": 2,\n" +
+                "    \"notReachedChanges\": 0,\n" +
                 "    \"failedChanges\": 0,\n" +
                 "    \"totalDurationMs\": 1200\n" +
                 "  }\n" +
@@ -85,7 +86,7 @@ class ResponseResultReaderTest {
         assertEquals(2, result.getData().getCompletedStages());
         assertEquals(5, result.getData().getTotalChanges());
         assertEquals(3, result.getData().getAppliedChanges());
-        assertEquals(2, result.getData().getSkippedChanges());
+        assertEquals(2, result.getData().getAlreadyAppliedChanges());
         assertEquals(0, result.getData().getFailedChanges());
         assertEquals(1500, result.getDurationMs());
     }
