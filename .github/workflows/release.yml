@@ -443,11 +443,11 @@ jobs:
           SHA_LINUX="${{ steps.sha256.outputs.sha_linux }}"
           SHA_MACOS="${{ steps.sha256.outputs.sha_macos }}"
 
-          gh workflow run bump-formula.yml \
+          gh workflow run bump_formula.yml \
             --repo flamingock/homebrew-tap \
             --ref master \
             --field version="${VERSION}" \
             --field sha256_linux="${SHA_LINUX}" \
             --field sha256_macos="${SHA_MACOS}"
 
-          echo "Triggered bump-formula workflow in flamingock/homebrew-tap for v${VERSION}"
+          echo "Triggered bump_formula workflow in flamingock/homebrew-tap for v${VERSION}"
