@@ -33,12 +33,92 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InstallSkillsCommandTest {
 
     @TempDir
     Path tempDir;
+
+    @Test
+    void call_defaultAgentPassesAgentsToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute();
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("agents", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentClaudePassesClaudeToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.claude(tempDir.resolve(".claude/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "claude");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("claude", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentAllPassesAllToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("--agent", "all");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("all", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentAllPrintsTwoDestinationsInSuccessMessage() throws Exception {
+        SkillsInstallationTarget agentsTarget = SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTarget claudeTarget = SkillsInstallationTarget.claude(tempDir.resolve(".claude/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(agentsTarget, claudeTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(agentsTarget, claudeTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(outContent, true, StandardCharsets.UTF_8));
+        try {
+            int exitCode = new CommandLine(command).execute("--agent", "all");
+
+            assertEquals(0, exitCode);
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        assertTrue(targetResolver.called);
+        assertTrue(pipeline.called);
+        String output = outContent.toString(StandardCharsets.UTF_8);
+        assertTrue(output.contains("2 destinations"));
+    }
 
     @Test
     void rootCommand_registersInstallSkillsSubcommand() {
@@ -152,6 +232,7 @@ class InstallSkillsCommandTest {
         private boolean called;
         private Path workingDirectory;
         private boolean global;
+        private String agent;
 
         private RecordingTargetResolver(List<SkillsInstallationTarget> targets) {
             this.targets = targets;
@@ -159,9 +240,15 @@ class InstallSkillsCommandTest {
 
         @Override
         public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+            return resolveTargets(workingDirectory, global, null);
+        }
+
+        @Override
+        public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
             this.called = true;
             this.workingDirectory = workingDirectory;
             this.global = global;
+            this.agent = agent;
             return targets;
         }
     }
@@ -178,6 +265,11 @@ class InstallSkillsCommandTest {
 
         @Override
         public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+            return resolveTargets(workingDirectory, global, null);
+        }
+
+        @Override
+        public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
             this.called = true;
             this.global = global;
             throw failure;

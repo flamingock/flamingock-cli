@@ -26,6 +26,7 @@ import java.util.List;
 public class SkillsInstallationTargetResolver {
 
     private static final String[] LOCAL_SKILLS_PATH = {".agents", "skills"};
+    private static final String[] CLAUDE_PATH = {".claude", "skills"};
     private static final String GLOBAL_MODE_NOT_IMPLEMENTED =
             "Global skills installation is not implemented yet. Run 'flamingock install-skills' to install into ./.agents/skills.";
 
@@ -40,18 +41,48 @@ public class SkillsInstallationTargetResolver {
     }
 
     /**
-     * Resolves the skills installation targets for the requested mode.
+     * Resolves the skills installation targets for the requested mode (default agent).
      *
      * @param workingDirectory current command working directory
      * @param global whether global mode was requested
      * @return resolved installation targets
      */
     public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+        return resolveTargets(workingDirectory, global, null);
+    }
+
+    /**
+     * Resolves the skills installation targets for the requested mode and agent.
+     *
+     * @param workingDirectory current command working directory
+     * @param global whether global mode was requested
+     * @param agent target AI assistant identifier (agents, claude, all; defaults to agents)
+     * @return resolved installation targets
+     */
+    public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
         if (global) {
             throw new IllegalStateException(GLOBAL_MODE_NOT_IMPLEMENTED);
         }
 
-        Path destination = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
-        return List.of(SkillsInstallationTarget.local(destination));
+        return switch (agent != null ? agent : "agents") {
+            case "agents" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
+                yield List.of(SkillsInstallationTarget.agents(destination));
+            }
+            case "claude" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, CLAUDE_PATH);
+                yield List.of(SkillsInstallationTarget.claude(destination));
+            }
+            case "all" -> {
+                Path agentsDest = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
+                Path claudeDest = directoryResolver.resolveDirectory(workingDirectory, CLAUDE_PATH);
+                yield List.of(
+                        SkillsInstallationTarget.agents(agentsDest),
+                        SkillsInstallationTarget.claude(claudeDest)
+                );
+            }
+            default -> throw new IllegalStateException(
+                    "Unsupported agent: '" + agent + "'. Supported values: claude, all.");
+        };
     }
 }

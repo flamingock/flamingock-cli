@@ -52,6 +52,7 @@ Built for **DevOps engineers**, **Platform engineers**, **Administrators**, and 
 | `audit fix`     | Fix a change's audit state (`APPLIED` or `ROLLED_BACK`) |
 | `issue list`    | List changes with audit issues                          |
 | `issue get`     | Get details and resolution guidance for an issue        |
+| `install-skills` | Install official Flamingock AI skills into the current project |
 
 ### Global Options
 
@@ -124,6 +125,36 @@ flamingock audit list --jar ./my-app.jar -J -Xmx1g -- --spring.profiles.active=s
 - **GraalVM native image** — Build a standalone native binary with no JVM required. Fast startup, low memory footprint.
 
 - **Comprehensive auditing** — Full chronological history, snapshot views, extended details, and date filtering for complete visibility into your change history.
+
+---
+
+## 🧠 Installing AI Skills
+
+Use `install-skills` to copy the official Flamingock skills into the directory for the AI assistant you use in the current project.
+
+### Quick path
+
+```bash
+# Default project-local install
+flamingock install-skills
+
+# Claude project-local install
+flamingock install-skills --agent claude
+
+# Install into both project-local locations
+flamingock install-skills --agent all
+```
+
+### Current targets
+
+| Command | Destination |
+|---------|-------------|
+| `flamingock install-skills` | `./.agents/skills` |
+| `flamingock install-skills --agent claude` | `./.claude/skills` |
+| `flamingock install-skills --agent all` | `./.agents/skills` and `./.claude/skills` |
+
+Note:
+- Paths are resolved relative to the directory where you run the command.
 
 ---
 

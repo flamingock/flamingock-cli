@@ -40,4 +40,24 @@ public record SkillsInstallationTarget(String identifier, Path destinationSkills
     public static SkillsInstallationTarget local(Path destinationSkillsDir) {
         return new SkillsInstallationTarget("local", destinationSkillsDir);
     }
+
+    /**
+     * Creates an agent-specific installation target for the <code>agents</code> assistant.
+     *
+     * @param destinationSkillsDir agent destination directory
+     * @return agents installation target
+     */
+    public static SkillsInstallationTarget agents(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:agents", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>claude</code> assistant.
+     *
+     * @param destinationSkillsDir claude destination directory
+     * @return claude installation target
+     */
+    public static SkillsInstallationTarget claude(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:claude", destinationSkillsDir);
+    }
 }

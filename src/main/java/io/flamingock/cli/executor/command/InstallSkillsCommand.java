@@ -40,6 +40,11 @@ public class InstallSkillsCommand implements Callable<Integer> {
     @Option(names = {"-g", "--global"}, description = "Install skills globally (not implemented yet)")
     private boolean global;
 
+    @Option(names = {"-a", "--agent"},
+            description = "Target AI assistant: agents, claude, or all (default: agents)",
+            defaultValue = "agents")
+    private String agent;
+
     private final SkillsInstallationTargetResolver targetResolver;
     private final SkillsInstallationPipeline pipeline;
     private final Path workingDirectory;
@@ -69,7 +74,7 @@ public class InstallSkillsCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            List<SkillsInstallationTarget> targets = targetResolver.resolveTargets(workingDirectory.toAbsolutePath().normalize(), global);
+            List<SkillsInstallationTarget> targets = targetResolver.resolveTargets(workingDirectory.toAbsolutePath().normalize(), global, agent);
             SkillsInstallationResult result = pipeline.install(targets);
             ConsoleFormatter.printInfo(buildSuccessMessage(result));
             return 0;

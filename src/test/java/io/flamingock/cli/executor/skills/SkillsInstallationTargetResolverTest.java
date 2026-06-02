@@ -44,7 +44,73 @@ class SkillsInstallationTargetResolverTest {
         assertTrue(directoryResolver.called);
         assertEquals(tempDir, directoryResolver.workingDirectory);
         assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
-        assertEquals(List.of(SkillsInstallationTarget.local(tempDir.resolve(".agents/skills"))), targets);
+        assertEquals(List.of(SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"))), targets);
+    }
+
+    @Test
+    void resolveTargets_agentsAgentResolvesToAgentsPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "agents");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:agents", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_claudeAgentResolvesToClaudePath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".claude/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "claude");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:claude", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".claude", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_allAgentReturnsBothTargets() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "all");
+
+        assertEquals(2, targets.size());
+        assertEquals("local:agents", targets.get(0).identifier());
+        assertEquals("local:claude", targets.get(1).identifier());
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_invalidAgentThrowsWithSupportedValues() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> resolver.resolveTargets(tempDir, false, "cursor"));
+
+        assertFalse(directoryResolver.called);
+        String message = exception.getMessage();
+        assertTrue(message.contains("cursor"));
+        assertTrue(message.contains("claude"));
+        assertTrue(message.contains("all"));
+    }
+
+    @Test
+    void resolveTargets_globalModeStillThrowsBeforeAgentEval() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".claude/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> resolver.resolveTargets(tempDir, true, "claude"));
+
+        assertFalse(directoryResolver.called);
+        assertTrue(exception.getMessage().contains("not implemented yet"));
     }
 
     @Test
