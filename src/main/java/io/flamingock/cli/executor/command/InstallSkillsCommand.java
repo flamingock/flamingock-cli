@@ -41,8 +41,7 @@ public class InstallSkillsCommand implements Callable<Integer> {
     private boolean global;
 
     @Option(names = {"-a", "--agent"},
-            description = "Target AI assistant: agents, claude, or all (default: agents)",
-            defaultValue = "agents")
+            description = "Target AI assistant: claude or all (default: agents, local project)")
     private String agent;
 
     private final SkillsInstallationTargetResolver targetResolver;

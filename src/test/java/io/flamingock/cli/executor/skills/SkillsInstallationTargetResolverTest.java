@@ -48,16 +48,31 @@ class SkillsInstallationTargetResolverTest {
     }
 
     @Test
-    void resolveTargets_agentsAgentResolvesToAgentsPath() {
+    void resolveTargets_nullAgentResolvesToAgentsPath() {
         RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
         SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
 
-        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "agents");
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, (String) null);
 
         assertEquals(1, targets.size());
         assertEquals("local:agents", targets.get(0).identifier());
         assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
         assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_agentsAgentThrowsWithSupportedValues() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> resolver.resolveTargets(tempDir, false, "agents"));
+
+        assertFalse(directoryResolver.called);
+        String message = exception.getMessage();
+        assertTrue(message.contains("agents"));
+        assertTrue(message.contains("claude"));
+        assertTrue(message.contains("all"));
     }
 
     @Test

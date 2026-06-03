@@ -56,7 +56,7 @@ public class SkillsInstallationTargetResolver {
      *
      * @param workingDirectory current command working directory
      * @param global whether global mode was requested
-     * @param agent target AI assistant identifier (agents, claude, all; defaults to agents)
+     * @param agent target AI assistant identifier (claude or all; null defaults to agents)
      * @return resolved installation targets
      */
     public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
@@ -64,11 +64,12 @@ public class SkillsInstallationTargetResolver {
             throw new IllegalStateException(GLOBAL_MODE_NOT_IMPLEMENTED);
         }
 
-        return switch (agent != null ? agent : "agents") {
-            case "agents" -> {
-                Path destination = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
-                yield List.of(SkillsInstallationTarget.agents(destination));
-            }
+        if (agent == null) {
+            Path destination = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
+            return List.of(SkillsInstallationTarget.agents(destination));
+        }
+
+        return switch (agent) {
             case "claude" -> {
                 Path destination = directoryResolver.resolveDirectory(workingDirectory, CLAUDE_PATH);
                 yield List.of(SkillsInstallationTarget.claude(destination));

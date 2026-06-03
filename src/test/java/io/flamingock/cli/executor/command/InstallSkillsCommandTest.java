@@ -42,7 +42,7 @@ class InstallSkillsCommandTest {
     Path tempDir;
 
     @Test
-    void call_defaultAgentPassesAgentsToResolver() {
+    void call_defaultAgentPassesNullToResolver() {
         SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"));
         RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
         RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
@@ -55,7 +55,33 @@ class InstallSkillsCommandTest {
 
         assertEquals(0, exitCode);
         assertTrue(targetResolver.called);
-        assertEquals("agents", targetResolver.agent);
+        assertNull(targetResolver.agent);
+    }
+
+    @Test
+    void call_withInvalidAgentAgentsReturnsExitCodeOne() {
+        FailingTargetResolver targetResolver = new FailingTargetResolver(
+                new IllegalStateException("Unsupported agent: 'agents'. Supported values: claude, all.")
+        );
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(List.of(), List.of()));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+        PrintStream originalErr = System.err;
+        System.setErr(new PrintStream(errContent, true, StandardCharsets.UTF_8));
+        try {
+            int exitCode = new CommandLine(command).execute("-a", "agents");
+
+            assertEquals(1, exitCode);
+        } finally {
+            System.setErr(originalErr);
+        }
+
+        assertTrue(targetResolver.called);
+        String stderr = errContent.toString(StandardCharsets.UTF_8);
+        assertTrue(stderr.contains("agents"));
+        assertTrue(stderr.contains("claude"));
+        assertTrue(stderr.contains("all"));
     }
 
     @Test
