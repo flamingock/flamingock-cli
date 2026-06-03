@@ -27,6 +27,12 @@ public class SkillsInstallationTargetResolver {
 
     private static final String[] LOCAL_SKILLS_PATH = {".agents", "skills"};
     private static final String[] CLAUDE_PATH = {".claude", "skills"};
+    private static final String[] GITHUB_PATH = {".github", "skills"};
+    private static final String[] CURSOR_PATH = {".cursor", "skills"};
+    private static final String[] OPENCODE_PATH = {".opencode", "skills"};
+    private static final String[] GEMINI_PATH = {".gemini", "skills"};
+    private static final String[] WINDSURF_PATH = {".windsurf", "skills"};
+    private static final String[] PI_PATH = {".pi", "skills"};
     private static final String GLOBAL_MODE_NOT_IMPLEMENTED =
             "Global skills installation is not implemented yet. Run 'flamingock install-skills' to install into ./.agents/skills.";
 
@@ -56,7 +62,7 @@ public class SkillsInstallationTargetResolver {
      *
      * @param workingDirectory current command working directory
      * @param global whether global mode was requested
-     * @param agent target AI assistant identifier (claude or all; null defaults to agents)
+     * @param agent target AI assistant identifier (claude, github, cursor, opencode, gemini, windsurf, pi)
      * @return resolved installation targets
      */
     public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
@@ -74,16 +80,32 @@ public class SkillsInstallationTargetResolver {
                 Path destination = directoryResolver.resolveDirectory(workingDirectory, CLAUDE_PATH);
                 yield List.of(SkillsInstallationTarget.claude(destination));
             }
-            case "all" -> {
-                Path agentsDest = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
-                Path claudeDest = directoryResolver.resolveDirectory(workingDirectory, CLAUDE_PATH);
-                yield List.of(
-                        SkillsInstallationTarget.agents(agentsDest),
-                        SkillsInstallationTarget.claude(claudeDest)
-                );
+            case "github" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, GITHUB_PATH);
+                yield List.of(SkillsInstallationTarget.github(destination));
+            }
+            case "cursor" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, CURSOR_PATH);
+                yield List.of(SkillsInstallationTarget.cursor(destination));
+            }
+            case "opencode" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, OPENCODE_PATH);
+                yield List.of(SkillsInstallationTarget.opencode(destination));
+            }
+            case "gemini" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, GEMINI_PATH);
+                yield List.of(SkillsInstallationTarget.gemini(destination));
+            }
+            case "windsurf" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, WINDSURF_PATH);
+                yield List.of(SkillsInstallationTarget.windsurf(destination));
+            }
+            case "pi" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, PI_PATH);
+                yield List.of(SkillsInstallationTarget.pi(destination));
             }
             default -> throw new IllegalStateException(
-                    "Unsupported agent: '" + agent + "'. Supported values: claude, all.");
+                    "Unsupported agent: '" + agent + "'. Supported values: claude, github, cursor, opencode, gemini, windsurf, pi.");
         };
     }
 }

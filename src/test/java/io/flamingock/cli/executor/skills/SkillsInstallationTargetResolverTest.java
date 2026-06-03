@@ -72,7 +72,12 @@ class SkillsInstallationTargetResolverTest {
         String message = exception.getMessage();
         assertTrue(message.contains("agents"));
         assertTrue(message.contains("claude"));
-        assertTrue(message.contains("all"));
+        assertTrue(message.contains("github"));
+        assertTrue(message.contains("cursor"));
+        assertTrue(message.contains("opencode"));
+        assertTrue(message.contains("gemini"));
+        assertTrue(message.contains("windsurf"));
+        assertTrue(message.contains("pi"));
     }
 
     @Test
@@ -89,15 +94,81 @@ class SkillsInstallationTargetResolverTest {
     }
 
     @Test
-    void resolveTargets_allAgentReturnsBothTargets() {
-        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+    void resolveTargets_geminiAgentResolvesToGeminiPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".gemini/skills"));
         SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
 
-        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "all");
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "gemini");
 
-        assertEquals(2, targets.size());
-        assertEquals("local:agents", targets.get(0).identifier());
-        assertEquals("local:claude", targets.get(1).identifier());
+        assertEquals(1, targets.size());
+        assertEquals("local:gemini", targets.get(0).identifier());
+        assertEquals(tempDir.resolve(".gemini/skills"), targets.get(0).destinationSkillsDir());
+        assertArrayEquals(new String[]{".gemini", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_githubAgentResolvesToGithubPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".github/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "github");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:github", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".github", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_cursorAgentResolvesToCursorPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".cursor/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "cursor");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:cursor", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".cursor", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_opencodeAgentResolvesToOpencodePath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".opencode/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "opencode");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:opencode", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".opencode", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_windsurfAgentResolvesToWindsurfPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".windsurf/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "windsurf");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:windsurf", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".windsurf", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_piAgentResolvesToPiPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".pi/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "pi");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:pi", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".pi", "skills"}, directoryResolver.segments);
         assertTrue(directoryResolver.called);
     }
 
@@ -107,13 +178,18 @@ class SkillsInstallationTargetResolverTest {
         SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> resolver.resolveTargets(tempDir, false, "cursor"));
+                () -> resolver.resolveTargets(tempDir, false, "foo"));
 
         assertFalse(directoryResolver.called);
         String message = exception.getMessage();
-        assertTrue(message.contains("cursor"));
+        assertTrue(message.contains("foo"));
         assertTrue(message.contains("claude"));
-        assertTrue(message.contains("all"));
+        assertTrue(message.contains("github"));
+        assertTrue(message.contains("cursor"));
+        assertTrue(message.contains("opencode"));
+        assertTrue(message.contains("gemini"));
+        assertTrue(message.contains("windsurf"));
+        assertTrue(message.contains("pi"));
     }
 
     @Test

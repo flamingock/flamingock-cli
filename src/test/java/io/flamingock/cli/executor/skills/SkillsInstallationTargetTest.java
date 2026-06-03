@@ -54,4 +54,100 @@ class SkillsInstallationTargetTest {
         assertEquals("local:claude", target.identifier());
         assertEquals(dest, target.destinationSkillsDir());
     }
+
+    @Test
+    void githubFactoryCreatesTargetWithGithubIdentifier() {
+        Path dest = Path.of("/some/path/.github/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.github(dest);
+
+        assertEquals("local:github", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void githubFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+                () -> SkillsInstallationTarget.github(null),
+                "destinationSkillsDir must not be null");
+    }
+
+    @Test
+    void cursorFactoryCreatesTargetWithCursorIdentifier() {
+        Path dest = Path.of("/some/path/.cursor/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.cursor(dest);
+
+        assertEquals("local:cursor", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void cursorFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+                () -> SkillsInstallationTarget.cursor(null),
+                "destinationSkillsDir must not be null");
+    }
+
+    @Test
+    void opencodeFactoryCreatesTargetWithOpencodeIdentifier() {
+        Path dest = Path.of("/some/path/.opencode/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.opencode(dest);
+
+        assertEquals("local:opencode", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void opencodeFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+                () -> SkillsInstallationTarget.opencode(null),
+                "destinationSkillsDir must not be null");
+    }
+
+    @Test
+    void geminiFactoryCreatesTargetWithGeminiIdentifier() {
+        Path dest = Path.of("/some/path/.gemini/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.gemini(dest);
+
+        assertEquals("local:gemini", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void geminiFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+                () -> SkillsInstallationTarget.gemini(null),
+                "destinationSkillsDir must not be null");
+    }
+
+    @Test
+    void windsurfFactoryCreatesTargetWithWindsurfIdentifier() {
+        Path dest = Path.of("/some/path/.windsurf/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.windsurf(dest);
+
+        assertEquals("local:windsurf", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void windsurfFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+            () -> SkillsInstallationTarget.windsurf(null),
+            "destinationSkillsDir must not be null");
+    }
+
+    @Test
+    void piFactoryCreatesTargetWithPiIdentifier() {
+        Path dest = Path.of("/some/path/.pi/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.pi(dest);
+
+        assertEquals("local:pi", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void piFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+            () -> SkillsInstallationTarget.pi(null),
+            "destinationSkillsDir must not be null");
+    }
 }
