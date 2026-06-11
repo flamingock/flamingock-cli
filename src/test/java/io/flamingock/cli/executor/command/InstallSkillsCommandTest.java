@@ -33,12 +33,180 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InstallSkillsCommandTest {
 
     @TempDir
     Path tempDir;
+
+    @Test
+    void call_defaultAgentPassesNullToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute();
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertNull(targetResolver.agent);
+    }
+
+    @Test
+    void call_withInvalidAgentAgentsReturnsExitCodeOne() {
+        FailingTargetResolver targetResolver = new FailingTargetResolver(
+                new IllegalStateException("Unsupported agent: 'agents'. Supported values: claude, github, cursor, opencode, gemini, windsurf, pi.")
+        );
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(List.of(), List.of()));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+        PrintStream originalErr = System.err;
+        System.setErr(new PrintStream(errContent, true, StandardCharsets.UTF_8));
+        try {
+            int exitCode = new CommandLine(command).execute("-a", "agents");
+
+            assertEquals(1, exitCode);
+        } finally {
+            System.setErr(originalErr);
+        }
+
+        assertTrue(targetResolver.called);
+        String stderr = errContent.toString(StandardCharsets.UTF_8);
+        assertTrue(stderr.contains("agents"));
+        assertTrue(stderr.contains("claude"));
+        assertTrue(stderr.contains("github"));
+        assertTrue(stderr.contains("cursor"));
+        assertTrue(stderr.contains("opencode"));
+        assertTrue(stderr.contains("gemini"));
+        assertTrue(stderr.contains("windsurf"));
+        assertTrue(stderr.contains("pi"));
+    }
+
+    @Test
+    void call_withAgentClaudePassesClaudeToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.claude(tempDir.resolve(".claude/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "claude");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("claude", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentGithubPassesGithubToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.github(tempDir.resolve(".github/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "github");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("github", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentCursorPassesCursorToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.cursor(tempDir.resolve(".cursor/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "cursor");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("cursor", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentOpencodePassesOpencodeToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.opencode(tempDir.resolve(".opencode/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "opencode");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("opencode", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentGeminiPassesGeminiToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.gemini(tempDir.resolve(".gemini/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "gemini");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("gemini", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentWindsurfPassesWindsurfToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.windsurf(tempDir.resolve(".windsurf/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+            List.of(resolvedTarget),
+            List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "windsurf");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("windsurf", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentPiPassesPiToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.pi(tempDir.resolve(".pi/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+            List.of(resolvedTarget),
+            List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "pi");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("pi", targetResolver.agent);
+    }
 
     @Test
     void rootCommand_registersInstallSkillsSubcommand() {
@@ -152,6 +320,7 @@ class InstallSkillsCommandTest {
         private boolean called;
         private Path workingDirectory;
         private boolean global;
+        private String agent;
 
         private RecordingTargetResolver(List<SkillsInstallationTarget> targets) {
             this.targets = targets;
@@ -159,9 +328,15 @@ class InstallSkillsCommandTest {
 
         @Override
         public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+            return resolveTargets(workingDirectory, global, null);
+        }
+
+        @Override
+        public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
             this.called = true;
             this.workingDirectory = workingDirectory;
             this.global = global;
+            this.agent = agent;
             return targets;
         }
     }
@@ -178,6 +353,11 @@ class InstallSkillsCommandTest {
 
         @Override
         public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global) {
+            return resolveTargets(workingDirectory, global, null);
+        }
+
+        @Override
+        public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
             this.called = true;
             this.global = global;
             throw failure;

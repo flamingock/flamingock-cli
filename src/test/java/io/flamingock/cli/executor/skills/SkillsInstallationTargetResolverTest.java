@@ -44,7 +44,164 @@ class SkillsInstallationTargetResolverTest {
         assertTrue(directoryResolver.called);
         assertEquals(tempDir, directoryResolver.workingDirectory);
         assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
-        assertEquals(List.of(SkillsInstallationTarget.local(tempDir.resolve(".agents/skills"))), targets);
+        assertEquals(List.of(SkillsInstallationTarget.agents(tempDir.resolve(".agents/skills"))), targets);
+    }
+
+    @Test
+    void resolveTargets_nullAgentResolvesToAgentsPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, (String) null);
+
+        assertEquals(1, targets.size());
+        assertEquals("local:agents", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_agentsAgentThrowsWithSupportedValues() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> resolver.resolveTargets(tempDir, false, "agents"));
+
+        assertFalse(directoryResolver.called);
+        String message = exception.getMessage();
+        assertTrue(message.contains("agents"));
+        assertTrue(message.contains("claude"));
+        assertTrue(message.contains("github"));
+        assertTrue(message.contains("cursor"));
+        assertTrue(message.contains("opencode"));
+        assertTrue(message.contains("gemini"));
+        assertTrue(message.contains("windsurf"));
+        assertTrue(message.contains("pi"));
+    }
+
+    @Test
+    void resolveTargets_claudeAgentResolvesToClaudePath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".claude/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "claude");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:claude", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".claude", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_geminiAgentResolvesToGeminiPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".gemini/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "gemini");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:gemini", targets.get(0).identifier());
+        assertEquals(tempDir.resolve(".gemini/skills"), targets.get(0).destinationSkillsDir());
+        assertArrayEquals(new String[]{".gemini", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_githubAgentResolvesToGithubPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".github/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "github");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:github", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".github", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_cursorAgentResolvesToCursorPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".cursor/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "cursor");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:cursor", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".cursor", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_opencodeAgentResolvesToOpencodePath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".opencode/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "opencode");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:opencode", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".opencode", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_windsurfAgentResolvesToWindsurfPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".windsurf/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "windsurf");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:windsurf", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".windsurf", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_piAgentResolvesToPiPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".pi/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "pi");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:pi", targets.get(0).identifier());
+        assertArrayEquals(new String[]{".pi", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_invalidAgentThrowsWithSupportedValues() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> resolver.resolveTargets(tempDir, false, "foo"));
+
+        assertFalse(directoryResolver.called);
+        String message = exception.getMessage();
+        assertTrue(message.contains("foo"));
+        assertTrue(message.contains("claude"));
+        assertTrue(message.contains("github"));
+        assertTrue(message.contains("cursor"));
+        assertTrue(message.contains("opencode"));
+        assertTrue(message.contains("gemini"));
+        assertTrue(message.contains("windsurf"));
+        assertTrue(message.contains("pi"));
+    }
+
+    @Test
+    void resolveTargets_globalModeStillThrowsBeforeAgentEval() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".claude/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> resolver.resolveTargets(tempDir, true, "claude"));
+
+        assertFalse(directoryResolver.called);
+        assertTrue(exception.getMessage().contains("not implemented yet"));
     }
 
     @Test

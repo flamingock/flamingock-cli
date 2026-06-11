@@ -40,4 +40,84 @@ public record SkillsInstallationTarget(String identifier, Path destinationSkills
     public static SkillsInstallationTarget local(Path destinationSkillsDir) {
         return new SkillsInstallationTarget("local", destinationSkillsDir);
     }
+
+    /**
+     * Creates an agent-specific installation target for the <code>agents</code> assistant.
+     *
+     * @param destinationSkillsDir agent destination directory
+     * @return agents installation target
+     */
+    public static SkillsInstallationTarget agents(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:agents", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>claude</code> assistant.
+     *
+     * @param destinationSkillsDir claude destination directory
+     * @return claude installation target
+     */
+    public static SkillsInstallationTarget claude(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:claude", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>github</code> assistant.
+     *
+     * @param destinationSkillsDir github destination directory
+     * @return github installation target
+     */
+    public static SkillsInstallationTarget github(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:github", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>cursor</code> assistant.
+     *
+     * @param destinationSkillsDir cursor destination directory
+     * @return cursor installation target
+     */
+    public static SkillsInstallationTarget cursor(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:cursor", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>opencode</code> assistant.
+     *
+     * @param destinationSkillsDir opencode destination directory
+     * @return opencode installation target
+     */
+    public static SkillsInstallationTarget opencode(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:opencode", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>gemini</code> assistant.
+     *
+     * @param destinationSkillsDir gemini destination directory
+     * @return gemini installation target
+     */
+    public static SkillsInstallationTarget gemini(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:gemini", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>windsurf</code> assistant.
+     *
+     * @param destinationSkillsDir windsurf destination directory
+     * @return windsurf installation target
+     */
+    public static SkillsInstallationTarget windsurf(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:windsurf", destinationSkillsDir);
+    }
+
+    /**
+     * Creates an agent-specific installation target for the <code>pi agent</code> assistant.
+     *
+     * @param destinationSkillsDir pi agent destination directory
+     * @return pi agent installation target
+     */
+    public static SkillsInstallationTarget pi(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:pi", destinationSkillsDir);
+    }
 }
