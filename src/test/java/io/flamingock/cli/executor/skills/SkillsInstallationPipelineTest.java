@@ -206,6 +206,53 @@ class SkillsInstallationPipelineTest {
     }
 
     @Test
+    void install_removesEvalsFromExtractedSkillsBeforeCopy() throws Exception {
+        Path destination = Files.createDirectories(tempDir.resolve(".agents").resolve("skills"));
+        SkillsInstallationTarget target = SkillsInstallationTarget.local(destination);
+
+        Path snapshotRoot = Files.createDirectories(tempDir.resolve("snapshot"));
+        Path skillWithEvals = Files.createDirectories(snapshotRoot.resolve("flamingock-core"));
+        Files.writeString(skillWithEvals.resolve("SKILL.md"), "main");
+        Path evalsDir = Files.createDirectories(skillWithEvals.resolve("evals"));
+        Files.writeString(evalsDir.resolve("test.java"), "// eval");
+
+        Path skillWithoutEvals = Files.createDirectories(snapshotRoot.resolve("flamingock-java"));
+        Files.writeString(skillWithoutEvals.resolve("SKILL.md"), "main");
+
+        SkillsInstallationPipeline pipeline = new SkillsInstallationPipeline(
+                new HttpFileDownloader() {
+                    @Override
+                    public Path downloadTo(Path workspace, URI sourceUri, String targetFileName, String userAgent, String downloadLabel) {
+                        return tempDir.resolve("downloaded.zip");
+                    }
+                },
+                new ZipArchiveExtractor() {
+                    @Override
+                    public Path extractSingleRootDirectory(Path archive, Path workspace, String extractionDirectoryName,
+                                                           String archiveDescription) {
+                        return snapshotRoot;
+                    }
+                },
+                new DirectoryLister() {
+                    @Override
+                    public List<Path> listDirectories(Path root, java.util.function.Predicate<Path> filter) {
+                        return List.of(skillWithEvals, skillWithoutEvals);
+                    }
+                },
+                new DirectoryReplacer(),
+                () -> tempDir.resolve("workspace"),
+                FileSystemUtils::deleteRecursively
+        );
+
+        SkillsInstallationResult result = pipeline.install(List.of(target));
+
+        assertEquals(List.of("flamingock-core", "flamingock-java"), result.installedSkills());
+        assertFalse(Files.exists(destination.resolve("flamingock-core").resolve("evals")));
+        assertEquals("main", Files.readString(destination.resolve("flamingock-core").resolve("SKILL.md")));
+        assertEquals("main", Files.readString(destination.resolve("flamingock-java").resolve("SKILL.md")));
+    }
+
+    @Test
     void install_downloadsAndExtractsOnceForMultipleTargets() throws Exception {
         List<String> events = new ArrayList<>();
         SkillsInstallationTarget firstTarget = new SkillsInstallationTarget("local", Files.createDirectories(tempDir.resolve("project-a/.agents/skills")));

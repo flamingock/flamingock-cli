@@ -110,6 +110,9 @@ public class SkillsInstallationPipeline {
                     snapshotRoot,
                     path -> path.getFileName().toString().startsWith(SKILL_DIRECTORY_PREFIX)
             );
+            for (Path skillDirectory : skillDirectories) {
+                FileSystemUtils.deleteRecursively(skillDirectory.resolve("evals"));
+            }
             List<String> installedSkills = new ArrayList<>();
             for (Path skillDirectory : skillDirectories) {
                 installedSkills.add(skillDirectory.getFileName().toString());
