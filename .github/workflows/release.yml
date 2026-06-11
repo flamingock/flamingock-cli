@@ -92,6 +92,12 @@ jobs:
         run: ./gradlew build
         shell: bash
 
+      - name: Setup MSVC developer command prompt
+        if: matrix.os == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
       - name: Compile native image
         run: ./gradlew nativeCompile
         shell: bash
