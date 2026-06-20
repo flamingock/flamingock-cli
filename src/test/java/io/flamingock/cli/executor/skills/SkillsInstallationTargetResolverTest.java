@@ -72,6 +72,7 @@ class SkillsInstallationTargetResolverTest {
         String message = exception.getMessage();
         assertTrue(message.contains("agents"));
         assertTrue(message.contains("claude"));
+        assertTrue(message.contains("codex"));
         assertTrue(message.contains("github"));
         assertTrue(message.contains("cursor"));
         assertTrue(message.contains("opencode"));
@@ -90,6 +91,20 @@ class SkillsInstallationTargetResolverTest {
         assertEquals(1, targets.size());
         assertEquals("local:claude", targets.get(0).identifier());
         assertArrayEquals(new String[]{".claude", "skills"}, directoryResolver.segments);
+        assertTrue(directoryResolver.called);
+    }
+
+    @Test
+    void resolveTargets_codexAgentResolvesToAgentsPath() {
+        RecordingDirectoryResolver directoryResolver = new RecordingDirectoryResolver(tempDir.resolve(".agents/skills"));
+        SkillsInstallationTargetResolver resolver = new SkillsInstallationTargetResolver(directoryResolver);
+
+        List<SkillsInstallationTarget> targets = resolver.resolveTargets(tempDir, false, "codex");
+
+        assertEquals(1, targets.size());
+        assertEquals("local:codex", targets.get(0).identifier());
+        assertEquals(tempDir.resolve(".agents/skills"), targets.get(0).destinationSkillsDir());
+        assertArrayEquals(new String[]{".agents", "skills"}, directoryResolver.segments);
         assertTrue(directoryResolver.called);
     }
 
@@ -184,6 +199,7 @@ class SkillsInstallationTargetResolverTest {
         String message = exception.getMessage();
         assertTrue(message.contains("foo"));
         assertTrue(message.contains("claude"));
+        assertTrue(message.contains("codex"));
         assertTrue(message.contains("github"));
         assertTrue(message.contains("cursor"));
         assertTrue(message.contains("opencode"));

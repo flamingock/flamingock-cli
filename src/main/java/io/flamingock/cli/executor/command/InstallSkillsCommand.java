@@ -41,7 +41,7 @@ public class InstallSkillsCommand implements Callable<Integer> {
     private boolean global;
 
     @Option(names = {"-a", "--agent"},
-            description = "Target AI assistant: claude, github, cursor, opencode, gemini, windsurf, pi")
+            description = "Target AI assistant: claude, codex, github, cursor, opencode, gemini, windsurf, pi")
     private String agent;
 
     private final SkillsInstallationTargetResolver targetResolver;

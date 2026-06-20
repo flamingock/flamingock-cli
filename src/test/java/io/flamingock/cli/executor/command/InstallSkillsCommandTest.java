@@ -61,7 +61,7 @@ class InstallSkillsCommandTest {
     @Test
     void call_withInvalidAgentAgentsReturnsExitCodeOne() {
         FailingTargetResolver targetResolver = new FailingTargetResolver(
-                new IllegalStateException("Unsupported agent: 'agents'. Supported values: claude, github, cursor, opencode, gemini, windsurf, pi.")
+                new IllegalStateException("Unsupported agent: 'agents'. Supported values: claude, codex, github, cursor, opencode, gemini, windsurf, pi.")
         );
         RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(List.of(), List.of()));
         InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
@@ -81,6 +81,7 @@ class InstallSkillsCommandTest {
         String stderr = errContent.toString(StandardCharsets.UTF_8);
         assertTrue(stderr.contains("agents"));
         assertTrue(stderr.contains("claude"));
+        assertTrue(stderr.contains("codex"));
         assertTrue(stderr.contains("github"));
         assertTrue(stderr.contains("cursor"));
         assertTrue(stderr.contains("opencode"));
@@ -104,6 +105,23 @@ class InstallSkillsCommandTest {
         assertEquals(0, exitCode);
         assertTrue(targetResolver.called);
         assertEquals("claude", targetResolver.agent);
+    }
+
+    @Test
+    void call_withAgentCodexPassesCodexToResolver() {
+        SkillsInstallationTarget resolvedTarget = SkillsInstallationTarget.codex(tempDir.resolve(".agents/skills"));
+        RecordingTargetResolver targetResolver = new RecordingTargetResolver(List.of(resolvedTarget));
+        RecordingPipeline pipeline = new RecordingPipeline(new SkillsInstallationResult(
+                List.of(resolvedTarget),
+                List.of("flamingock-core")
+        ));
+        InstallSkillsCommand command = new InstallSkillsCommand(targetResolver, pipeline, tempDir);
+
+        int exitCode = new CommandLine(command).execute("-a", "codex");
+
+        assertEquals(0, exitCode);
+        assertTrue(targetResolver.called);
+        assertEquals("codex", targetResolver.agent);
     }
 
     @Test

@@ -62,7 +62,7 @@ public class SkillsInstallationTargetResolver {
      *
      * @param workingDirectory current command working directory
      * @param global whether global mode was requested
-     * @param agent target AI assistant identifier (claude, github, cursor, opencode, gemini, windsurf, pi)
+     * @param agent target AI assistant identifier (claude, codex, github, cursor, opencode, gemini, windsurf, pi)
      * @return resolved installation targets
      */
     public List<SkillsInstallationTarget> resolveTargets(Path workingDirectory, boolean global, String agent) {
@@ -79,6 +79,10 @@ public class SkillsInstallationTargetResolver {
             case "claude" -> {
                 Path destination = directoryResolver.resolveDirectory(workingDirectory, CLAUDE_PATH);
                 yield List.of(SkillsInstallationTarget.claude(destination));
+            }
+            case "codex" -> {
+                Path destination = directoryResolver.resolveDirectory(workingDirectory, LOCAL_SKILLS_PATH);
+                yield List.of(SkillsInstallationTarget.codex(destination));
             }
             case "github" -> {
                 Path destination = directoryResolver.resolveDirectory(workingDirectory, GITHUB_PATH);
@@ -105,7 +109,7 @@ public class SkillsInstallationTargetResolver {
                 yield List.of(SkillsInstallationTarget.pi(destination));
             }
             default -> throw new IllegalStateException(
-                    "Unsupported agent: '" + agent + "'. Supported values: claude, github, cursor, opencode, gemini, windsurf, pi.");
+                    "Unsupported agent: '" + agent + "'. Supported values: claude, codex, github, cursor, opencode, gemini, windsurf, pi.");
         };
     }
 }
