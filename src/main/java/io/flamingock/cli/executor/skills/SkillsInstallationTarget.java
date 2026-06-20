@@ -62,6 +62,16 @@ public record SkillsInstallationTarget(String identifier, Path destinationSkills
     }
 
     /**
+     * Creates an agent-specific installation target for the <code>codex</code> assistant.
+     *
+     * @param destinationSkillsDir codex destination directory
+     * @return codex installation target
+     */
+    public static SkillsInstallationTarget codex(Path destinationSkillsDir) {
+        return new SkillsInstallationTarget("local:codex", destinationSkillsDir);
+    }
+
+    /**
      * Creates an agent-specific installation target for the <code>github</code> assistant.
      *
      * @param destinationSkillsDir github destination directory

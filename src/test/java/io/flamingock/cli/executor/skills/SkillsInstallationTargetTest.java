@@ -56,6 +56,22 @@ class SkillsInstallationTargetTest {
     }
 
     @Test
+    void codexFactoryCreatesTargetWithCodexIdentifier() {
+        Path dest = Path.of("/some/path/.agents/skills");
+        SkillsInstallationTarget target = SkillsInstallationTarget.codex(dest);
+
+        assertEquals("local:codex", target.identifier());
+        assertEquals(dest, target.destinationSkillsDir());
+    }
+
+    @Test
+    void codexFactoryRejectsNullPath() {
+        assertThrows(NullPointerException.class,
+            () -> SkillsInstallationTarget.codex(null),
+            "destinationSkillsDir must not be null");
+    }
+
+    @Test
     void githubFactoryCreatesTargetWithGithubIdentifier() {
         Path dest = Path.of("/some/path/.github/skills");
         SkillsInstallationTarget target = SkillsInstallationTarget.github(dest);
